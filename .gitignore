@@ -1,0 +1,14 @@
+# Dependencias y runtime (no van al repo)
+node/
+node_modules/
+
+# Datos personales y respaldos (privados, no se publican)
+tareas.json
+tareas.json.tmp
+backups/
+
+# Temporales
+*.log
+_*.zip
+.DS_Store
+Thumbs.db

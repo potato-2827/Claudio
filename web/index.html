@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mis Tareas</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%236366f1'/%3E%3Cpath d='M28 52l14 14 30-32' fill='none' stroke='white' stroke-width='10' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+  :root{
+    color-scheme:light;
+    --menu:#ffffff;
+    --bg1:#eef2ff; --bg2:#faf5ff;
+    --card:rgba(255,255,255,.82);
+    --card-border:rgba(255,255,255,.7);
+    --text:#181527; --muted:#5f5d70;
+    --accent:#5457e6; --accent-soft:#e7e9ff;
+    --done:#9a98ab; --danger:#dc2626;
+    --shadow:0 20px 50px -20px rgba(60,50,120,.45);
+    --input-bg:rgba(255,255,255,.7);
+    --row-bg:rgba(255,255,255,.65);
+    --row-border:rgba(120,110,160,.18);
+  }
+  [data-theme="dark"]{
+    color-scheme:dark;
+    --menu:#262238;
+    --bg1:#14121d; --bg2:#1b1730;
+    --card:rgba(34,30,50,.94);
+    --card-border:rgba(255,255,255,.13);
+    --text:#f5f3fc; --muted:#bfbbd2;
+    --accent:#a6a4ff; --accent-soft:#322e52;
+    --done:#928fab; --danger:#ff6b6b;
+    --shadow:0 20px 50px -18px rgba(0,0,0,.7);
+    --input-bg:rgba(255,255,255,.08);
+    --row-bg:rgba(255,255,255,.06);
+    --row-border:rgba(255,255,255,.13);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  html,body{scrollbar-width:none;-ms-overflow-style:none}
+  html::-webkit-scrollbar,body::-webkit-scrollbar{width:0;height:0;display:none}
+  body{
+    font-family:"Segoe UI Variable Text","Segoe UI Variable","Segoe UI",system-ui,sans-serif;
+    background:linear-gradient(155deg,var(--bg1),var(--bg2));
+    color:var(--text);
+    margin:0;padding:0;min-height:100vh;
+    transition:background .4s ease;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    font-synthesis:none;
+    letter-spacing:.005em;
+  }
+  .app{
+    position:relative;
+    width:100%;max-width:none;
+    height:100vh;
+    background:transparent;
+    border:none;border-radius:0;
+    padding:20px 20px 14px;
+    display:flex;flex-direction:column;
+  }
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .titles h1{font-size:1.5rem;font-weight:700;letter-spacing:-.02em}
+  .titles .date{color:var(--muted);font-size:.82rem;margin-top:2px;text-transform:capitalize}
+  .theme-btn{
+    border:none;cursor:pointer;width:38px;height:38px;border-radius:12px;
+    background:var(--accent-soft);color:var(--accent);font-size:1.05rem;
+    display:grid;place-items:center;transition:transform .2s,background .3s;flex:none;
+  }
+  .theme-btn:hover{transform:scale(1.08) rotate(-8deg)}
+  .head-actions{display:flex;gap:8px;flex:none}
+
+  /* Diagrama de Ishikawa */
+  .diagram-overlay{position:fixed;inset:0;z-index:100;
+    background:linear-gradient(155deg,var(--bg1),var(--bg2));
+    display:flex;flex-direction:column}
+  .diagram-overlay[hidden]{display:none}
+  .diagram-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;
+    border-bottom:1px solid var(--row-border);flex:none}
+  .diagram-bar h2{font-size:1rem;font-weight:700;flex:1;letter-spacing:-.01em;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .diagram-bar button{border:1px solid var(--row-border);background:var(--input-bg);
+    color:var(--text);cursor:pointer;font:inherit;font-size:.82rem;font-weight:600;
+    padding:6px 11px;border-radius:9px;transition:.15s}
+  .diagram-bar button:hover{border-color:var(--accent);color:var(--accent)}
+  #ikZoomLbl{font-size:.78rem;color:var(--muted);font-weight:700;min-width:42px;text-align:center}
+  .diagram-scroll{flex:1;overflow:auto;padding:0;display:block;cursor:grab;user-select:none}
+  .diagram-scroll.panning{cursor:grabbing}
+  #ikCanvas{position:relative}
+  .diagram-scroll svg.ishikawa{display:block;position:absolute;top:0;left:0}
+  .popover{
+    position:absolute;top:62px;right:24px;z-index:30;min-width:218px;
+    background:var(--menu);border:1px solid var(--row-border);
+    border-radius:14px;box-shadow:var(--shadow);padding:8px;
+    display:flex;flex-direction:column;gap:3px;
+    animation:pop .18s ease;
+  }
+  .popover[hidden]{display:none}
+  .popover button{
+    border:none;background:transparent;color:var(--text);text-align:left;
+    padding:9px 11px;border-radius:9px;cursor:pointer;font:inherit;font-size:.85rem;font-weight:600;
+    transition:background .15s;
+  }
+  .popover button:hover{background:var(--accent-soft)}
+  .pop-status{font-size:.74rem;color:var(--muted);padding:7px 11px 3px;font-weight:700}
+  .pop-status.on{color:#15a34a}
+  [data-theme="dark"] .pop-status.on{color:#5fe08a}
+  .pop-sep{height:1px;background:var(--row-border);margin:3px 6px}
+
+  .progress-wrap{margin:18px 0 4px}
+  .progress-meta{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-bottom:7px}
+  .progress-meta b{color:var(--accent)}
+  .bar{height:8px;border-radius:99px;background:var(--accent-soft);overflow:hidden}
+  .bar>span{display:block;height:100%;width:0;border-radius:99px;
+    background:linear-gradient(90deg,var(--accent),#a78bfa);
+    transition:width .5s cubic-bezier(.4,0,.2,1)}
+
+  form{display:flex;gap:9px;margin:18px 0 14px}
+  input[type=text]{
+    flex:1;border:1px solid var(--row-border);background:var(--input-bg);
+    color:var(--text);padding:12px 15px;border-radius:14px;font-size:.95rem;
+    outline:none;transition:border .2s,box-shadow .2s;
+  }
+  input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  input::placeholder{color:var(--muted)}
+  .add{
+    border:none;cursor:pointer;background:var(--accent);color:#fff;
+    width:46px;border-radius:14px;font-size:1.4rem;font-weight:300;line-height:1;
+    transition:transform .15s,filter .2s;flex:none;
+  }
+  .add:hover{filter:brightness(1.08)}
+  .add:active{transform:scale(.92)}
+
+  .filters{display:flex;gap:6px;margin-bottom:10px}
+  .filters button{
+    border:none;cursor:pointer;background:transparent;color:var(--muted);
+    padding:6px 13px;border-radius:99px;font-size:.82rem;font-weight:600;
+    transition:.2s;
+  }
+  .filters button.active{background:var(--accent);color:#fff}
+  .filters button:not(.active):hover{background:var(--accent-soft);color:var(--accent)}
+
+  ul{list-style:none;overflow-y:auto;flex:1;margin:0 -6px;padding:0 6px;
+    scrollbar-width:none;-ms-overflow-style:none}
+  ul::-webkit-scrollbar{width:0;height:0;display:none}
+  li{
+    display:flex;flex-direction:column;
+    background:var(--row-bg);border:1px solid var(--row-border);
+    border-radius:14px;margin-bottom:9px;
+    animation:pop .28s cubic-bezier(.34,1.56,.64,1);
+  }
+  .row{display:flex;align-items:center;gap:9px;padding:12px 13px;min-height:54px}
+  @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
+  li.removing{animation:out .25s forwards}
+  @keyframes out{to{opacity:0;transform:translateX(40px);height:0;margin:0;padding-top:0;padding-bottom:0}}
+  li.dragging{opacity:.45}
+  li.drop-before{box-shadow:inset 0 3px 0 -1px var(--accent)}
+  li.drop-after{box-shadow:inset 0 -3px 0 -1px var(--accent)}
+  .grip{
+    flex:none;cursor:grab;color:var(--muted);opacity:0;
+    font-size:1rem;line-height:1;padding:0 1px;user-select:none;
+    transition:opacity .2s,color .2s;touch-action:none;
+  }
+  li:hover .grip{opacity:.55}
+  .grip:hover{color:var(--accent);opacity:1}
+  .grip:active{cursor:grabbing}
+  .check{
+    width:24px;height:24px;flex:none;border-radius:50%;cursor:pointer;
+    border:2.2px solid var(--accent);position:relative;transition:.2s;
+  }
+  .check:hover{box-shadow:0 0 0 4px var(--accent-soft)}
+  .check svg{position:absolute;inset:0;margin:auto;width:13px;height:13px;
+    stroke:#fff;stroke-width:3.5;fill:none;stroke-linecap:round;stroke-linejoin:round;
+    stroke-dasharray:20;stroke-dashoffset:20;transition:stroke-dashoffset .3s .05s}
+  li.done .check{background:var(--accent)}
+  li.done .check svg{stroke-dashoffset:0}
+  .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+  .txt{min-width:0;max-width:100%;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:.25s;cursor:pointer}
+  .meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:20px}
+  li.done .txt{color:var(--done);text-decoration:line-through}
+  .edit-input{
+    flex:1;font:inherit;font-size:.95rem;color:var(--text);
+    background:var(--input-bg);border:1px solid var(--accent);
+    border-radius:9px;padding:6px 9px;outline:none;
+    box-shadow:0 0 0 3px var(--accent-soft);
+  }
+  .edit,.del{
+    border:none;background:transparent;cursor:pointer;color:var(--muted);
+    display:none;width:30px;height:30px;border-radius:9px;flex:none;font-size:1rem;
+    place-items:center;transition:.2s;
+  }
+  li:hover .del,li:hover .edit{display:grid}
+  .edit:hover{background:var(--accent-soft);color:var(--accent)}
+  .del:hover{background:rgba(239,68,68,.12);color:var(--danger)}
+
+  /* Subtareas */
+  .subbtn{
+    flex:none;border:none;cursor:pointer;border-radius:99px;white-space:nowrap;
+    font:inherit;font-size:.7rem;font-weight:700;padding:3px 8px;
+    background:var(--row-border);color:var(--muted);display:none;transition:background .2s;
+    align-items:center;gap:4px;
+  }
+  li:hover .subbtn,.subbtn.has-sub{display:inline-flex}
+  .subbtn:hover{background:var(--accent-soft);color:var(--accent)}
+  .subbtn.complete{color:#16a34a}
+  [data-theme="dark"] .subbtn.complete{color:#5fe08a}
+  .subpanel{
+    display:flex;flex-direction:column;gap:5px;
+    padding:2px 14px 12px 46px;
+    animation:pop .2s ease;
+  }
+  .subhead{display:flex;align-items:center;gap:9px;margin-bottom:3px;padding-right:2px}
+  .subbar{flex:1;height:5px;border-radius:99px;background:var(--accent-soft);overflow:hidden}
+  .subbar>span{display:block;height:100%;border-radius:99px;
+    background:linear-gradient(90deg,var(--accent),#a78bfa);
+    transition:width .4s cubic-bezier(.4,0,.2,1)}
+  .subcount{font-size:.72rem;font-weight:700;color:var(--muted);white-space:nowrap}
+  .subhead.complete .subcount{color:#16a34a}
+  [data-theme="dark"] .subhead.complete .subcount{color:#5fe08a}
+  .subhead.complete .subbar>span{background:linear-gradient(90deg,#16a34a,#4ade80)}
+  .subitem{display:flex;align-items:center;gap:9px}
+  .subcheck{
+    width:18px;height:18px;flex:none;border-radius:50%;cursor:pointer;
+    border:2px solid var(--accent);position:relative;transition:.2s;
+  }
+  .subcheck:hover{box-shadow:0 0 0 3px var(--accent-soft)}
+  .subcheck svg{position:absolute;inset:0;margin:auto;width:10px;height:10px;
+    stroke:#fff;stroke-width:4;fill:none;stroke-linecap:round;stroke-linejoin:round;
+    stroke-dasharray:20;stroke-dashoffset:20;transition:stroke-dashoffset .25s}
+  .subitem.done .subcheck{background:var(--accent)}
+  .subitem.done .subcheck svg{stroke-dashoffset:0}
+  .subtxt{flex:1;font-size:.86rem;cursor:pointer;word-break:break-word}
+  .subitem.done .subtxt{color:var(--done);text-decoration:line-through}
+  .subedit{flex:1;font:inherit;font-size:.86rem;color:var(--text);
+    background:var(--input-bg);border:1px solid var(--accent);border-radius:8px;
+    padding:4px 8px;outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+  .subdel{border:none;background:transparent;cursor:pointer;color:var(--muted);
+    opacity:0;width:24px;height:24px;border-radius:7px;flex:none;font-size:.85rem;
+    display:grid;place-items:center;transition:.2s}
+  .subitem:hover .subdel{opacity:1}
+  .subdel:hover{background:rgba(239,68,68,.12);color:var(--danger)}
+  .subadd-row{display:flex;align-items:center;gap:9px;padding-left:1px}
+  .subadd{
+    flex:1;font:inherit;font-size:.84rem;color:var(--text);
+    background:var(--input-bg);border:1px solid var(--row-border);
+    border-radius:8px;padding:6px 10px;outline:none;transition:.2s;
+  }
+  .subadd:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+
+  .empty{text-align:center;color:var(--muted);padding:38px 10px;font-size:.9rem}
+  .empty .ico{font-size:2.4rem;display:block;margin-bottom:8px;opacity:.7}
+
+  footer{display:flex;justify-content:space-between;align-items:center;
+    margin-top:12px;padding-top:13px;border-top:1px solid var(--row-border);
+    font-size:.8rem;color:var(--muted)}
+  .clear{border:none;background:transparent;color:var(--muted);cursor:pointer;
+    font-size:.8rem;font-weight:600;padding:5px 9px;border-radius:8px;transition:.2s}
+  .clear:hover{color:var(--danger);background:rgba(239,68,68,.1)}
+  .sort-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .sort-lbl{font-size:.76rem;color:var(--muted);font-weight:600}
+  .sortsel{
+    border:1px solid var(--row-border);background:var(--input-bg);color:var(--text);
+    font:inherit;font-size:.78rem;font-weight:600;border-radius:8px;
+    padding:4px 8px;cursor:pointer;outline:none;transition:.2s;
+  }
+  .sortsel:hover{border-color:var(--accent)}
+  .sortsel:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .sortsel option,.catsel option{background:var(--menu);color:var(--text);font-weight:600}
+  .grip.locked{opacity:.25!important;cursor:not-allowed}
+
+  /* Barra de categorias */
+  .cat-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:-2px 0 12px}
+  .cat-bar .clbl{font-size:1rem;margin-right:1px;opacity:.6}
+  .chip{
+    border:1px solid var(--row-border);cursor:pointer;background:transparent;
+    color:var(--muted);padding:5px 11px;border-radius:99px;font-size:.8rem;font-weight:600;
+    display:inline-flex;align-items:center;gap:6px;transition:.2s;
+  }
+  .chip .dot{width:8px;height:8px;border-radius:50%;flex:none}
+  .chip.active{color:#fff;border-color:transparent}
+  .chip:not(.active):hover{background:var(--accent-soft)}
+  .chip .x{margin-left:1px;font-size:.95rem;line-height:1;opacity:.8}
+  .chip .x:hover{opacity:1;transform:scale(1.2)}
+  .chip-add{
+    border:1px dashed var(--row-border);cursor:pointer;background:transparent;
+    color:var(--accent);padding:5px 11px;border-radius:99px;font-size:.8rem;font-weight:600;
+    transition:.2s;
+  }
+  .chip-add:hover{background:var(--accent-soft);border-style:solid}
+  .newcat{
+    border:1px solid var(--accent);background:var(--input-bg);color:var(--text);
+    border-radius:99px;padding:5px 11px;font:inherit;font-size:.8rem;font-weight:600;
+    outline:none;width:120px;box-shadow:0 0 0 3px var(--accent-soft);
+  }
+  /* selector de categoria por tarea */
+  .catsel{
+    flex:none;max-width:108px;border:none;cursor:pointer;
+    font:inherit;font-size:.7rem;font-weight:700;letter-spacing:.01em;
+    border-radius:99px;padding:3px 9px;appearance:none;-webkit-appearance:none;
+    color:var(--muted);background:var(--row-border);display:none;
+    text-overflow:ellipsis;
+  }
+  li:hover .catsel,.catsel.has-cat{display:inline-block}
+  .catsel:hover{filter:brightness(.97)}
+
+  /* Fecha de vencimiento por tarea */
+  .due-btn{
+    flex:none;border:none;cursor:pointer;border-radius:99px;white-space:nowrap;
+    font:inherit;font-size:.7rem;font-weight:700;padding:3px 8px;
+    background:var(--row-border);color:var(--muted);display:none;transition:background .2s;
+  }
+  li:hover .due-btn,.due-btn.has-due{display:inline-block}
+  .due-btn:hover{filter:brightness(.97)}
+  .due-btn.overdue{background:rgba(239,68,68,.16);color:var(--danger)}
+  .due-btn.today{background:var(--accent-soft);color:var(--accent)}
+  .due-btn.upcoming{background:var(--accent-soft);color:var(--accent);opacity:1}
+  .due-btn.due-done{opacity:.55;text-decoration:line-through}
+
+  /* Prioridad / importante */
+  .star{
+    flex:none;border:none;background:transparent;cursor:pointer;
+    width:30px;height:30px;border-radius:9px;font-size:1.05rem;line-height:1;
+    display:none;place-items:center;color:var(--muted);transition:.2s;
+  }
+  li:hover .star{display:grid}
+  .star:hover{background:var(--accent-soft)}
+  .star.on{display:grid;color:#f5b301}
+  li.important{background:rgba(245,179,1,.07)}
+  .due-input{width:0;height:0;opacity:0;border:0;padding:0;margin:0;overflow:hidden}
+
+  /* Interruptores que sobreescriben el orden */
+  .prio-toggles{display:flex;gap:6px;flex-wrap:wrap}
+  .toggle{
+    border:1px solid var(--row-border);background:transparent;color:var(--muted);
+    cursor:pointer;border-radius:99px;padding:5px 10px;font-size:.74rem;font-weight:700;transition:.2s;
+  }
+  .toggle:hover{background:var(--accent-soft)}
+  .toggle.on{background:var(--accent);color:#fff;border-color:transparent}
+  .sort-right{display:flex;align-items:center;gap:8px;flex:none}
+</style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div class="titles">
+        <h1>Mis Tareas</h1>
+        <div class="date" id="date"></div>
+      </div>
+      <div class="head-actions">
+        <button class="theme-btn" id="ishikawaBtn" title="Diagrama de Ishikawa">🐟</button>
+        <button class="theme-btn" id="backupBtn" title="Respaldo de datos">💾</button>
+        <button class="theme-btn" id="themeBtn" title="Cambiar tema">🌙</button>
+      </div>
+    </header>
+
+    <div class="popover" id="backupMenu" hidden>
+      <div class="pop-status" id="backupStatus">Respaldo automático: —</div>
+      <div class="pop-sep"></div>
+      <button id="exportBtn">⬇️&nbsp; Exportar respaldo (.json)</button>
+      <button id="importBtn">⬆️&nbsp; Importar respaldo</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-meta">
+        <span id="progressLabel">Sin tareas todavía</span>
+        <b id="progressPct">0%</b>
+      </div>
+      <div class="bar"><span id="bar"></span></div>
+    </div>
+
+    <form id="form">
+      <input type="text" id="input" placeholder="¿Qué necesitas hacer?" autocomplete="off" maxlength="200">
+      <button class="add" type="submit" title="Agregar">+</button>
+    </form>
+
+    <div class="filters">
+      <button data-filter="all" class="active">Todas</button>
+      <button data-filter="active">Pendientes</button>
+      <button data-filter="done">Completadas</button>
+    </div>
+
+    <div class="cat-bar" id="catBar"></div>
+
+    <div class="sort-row">
+      <div class="prio-toggles">
+        <button class="toggle" id="tPrio" title="Las tareas importantes van arriba, por encima del orden elegido">⭐ Importantes</button>
+        <button class="toggle" id="tDue" title="Las tareas por vencer van arriba, por encima del orden elegido">⏰ Vencimiento</button>
+      </div>
+      <div class="sort-right">
+        <span class="sort-lbl">Ordenar</span>
+        <select id="sort" class="sortsel" title="Ordenar tareas">
+          <option value="manual">↕ Manual</option>
+          <option value="az">A → Z</option>
+          <option value="za">Z → A</option>
+          <option value="cat">Por categoría</option>
+          <option value="pending">Pendientes primero</option>
+        </select>
+      </div>
+    </div>
+
+    <ul id="list"></ul>
+
+    <footer>
+      <span id="count">0 pendientes</span>
+      <button class="clear" id="clearDone">Borrar completadas</button>
+    </footer>
+  </main>
+
+  <div class="diagram-overlay" id="diagramOverlay" hidden>
+    <div class="diagram-bar">
+      <h2>🐟 Diagrama de Ishikawa</h2>
+      <button id="ikZoomOut" title="Alejar">−</button>
+      <span id="ikZoomLbl">100%</span>
+      <button id="ikZoomIn" title="Acercar">+</button>
+      <button id="ikFit" title="Ajustar">Ajustar</button>
+      <button id="ikPng" title="Guardar como imagen PNG">⬇️ PNG</button>
+      <button id="ikClose" title="Cerrar">✕ Cerrar</button>
+    </div>
+    <div class="diagram-scroll" id="diagramScroll"></div>
+  </div>
+
+<script>
+  // Versión web: persistencia en localStorage del navegador (reemplaza el IPC de Electron).
+  if(!window.api){
+    window.api = {
+      load: async () => { try { return JSON.parse(localStorage.getItem("mis_tareas_web") || "{}"); } catch(e){ return {}; } },
+      save: async (data) => { try { localStorage.setItem("mis_tareas_web", JSON.stringify(data)); } catch(e){} return true; }
+    };
+  }
+  const KEY="mis_tareas_v1", THEMEKEY="mis_tareas_theme", CATKEY="mis_tareas_cats", SORTKEY="mis_tareas_sort";
+  let tasks = JSON.parse(localStorage.getItem(KEY) || "[]");
+  let cats  = JSON.parse(localStorage.getItem(CATKEY) || "[]");
+  let statusFilter = "all";   // all | active | done
+  let catFilter = "all";      // all | <id de categoria>
+  let sortMode = localStorage.getItem(SORTKEY) || "manual";  // manual | az | za | cat | pending
+  let prioFirst = localStorage.getItem("mis_tareas_prioFirst")==="1";  // importantes arriba (sobreescribe)
+  let dueFirst  = localStorage.getItem("mis_tareas_dueFirst")==="1";   // por vencer arriba (sobreescribe)
+  let addingCat = false;
+  const expanded = new Set();   // ids de tareas con subtareas desplegadas
+
+  const PALETTE=["#6366f1","#ec4899","#f59e0b","#10b981","#3b82f6","#8b5cf6","#ef4444","#14b8a6","#f97316","#0ea5e9"];
+  let backupOn=false;   // respaldo a archivo vía Electron (IPC)
+
+  const $ = s => document.querySelector(s);
+  const list=$("#list"), input=$("#input"), catBar=$("#catBar");
+  const catById = id => cats.find(c=>c.id===id);
+
+  // Fecha en español
+  $("#date").textContent = new Date().toLocaleDateString("es-ES",
+    {weekday:"long", day:"numeric", month:"long"});
+
+  // Tema
+  function applyTheme(t){
+    document.documentElement.dataset.theme = t;
+    $("#themeBtn").textContent = t==="dark" ? "☀️" : "🌙";
+  }
+  applyTheme(localStorage.getItem(THEMEKEY) || "light");
+  $("#themeBtn").onclick = () => {
+    const t = document.documentElement.dataset.theme==="dark" ? "light":"dark";
+    localStorage.setItem(THEMEKEY, t); applyTheme(t); syncServer();
+  };
+
+  function persistLocal(){
+    localStorage.setItem(KEY, JSON.stringify(tasks));
+    localStorage.setItem(CATKEY, JSON.stringify(cats));
+    localStorage.setItem(SORTKEY, sortMode);
+    localStorage.setItem("mis_tareas_prioFirst", prioFirst?"1":"0");
+    localStorage.setItem("mis_tareas_dueFirst",  dueFirst?"1":"0");
+  }
+  function stateSnapshot(){
+    return { v:2, savedAt:new Date().toISOString(),
+             tasks, cats, sort:sortMode, prioFirst, dueFirst,
+             theme:document.documentElement.dataset.theme };
+  }
+  let syncTimer=null;
+  function syncServer(){
+    clearTimeout(syncTimer);
+    syncTimer=setTimeout(()=>{
+      window.api.save(stateSnapshot())
+        .then(()=>{ if(!backupOn){ backupOn=true; updateBackupStatus(); } })
+        .catch(()=>{ if(backupOn){ backupOn=false; updateBackupStatus(); } });
+    }, 450);
+  }
+  // save() y saveCats() persisten todo el estado (local + respaldo)
+  function save(){ persistLocal(); syncServer(); }
+  const saveCats = save;
+
+  function render(){
+    renderCats();
+    let visible = tasks.filter(t=>{
+      const st = statusFilter==="all" ? true : statusFilter==="done" ? t.done : !t.done;
+      const ct = catFilter==="all" ? true : t.cat===catFilter;
+      return st && ct;
+    });
+    // Orden = (interruptores que sobreescriben) + (orden elegido como desempate).
+    // El arrastre manual queda como desempate final gracias a que sort() es estable.
+    const keys = sortKeys();
+    if(keys.length) visible = visible.slice().sort((a,b)=>{
+      for(const k of keys){ const r=k(a,b); if(r) return r; }
+      return 0;
+    });
+    const reorderable = sortMode==="manual" && !prioFirst && !dueFirst;
+
+    list.innerHTML = "";
+    if(!visible.length){
+      let msg = "Agrega tu primera tarea arriba";
+      if(tasks.length){
+        msg = catFilter!=="all"
+          ? "Sin tareas en esta categoría"
+          : (statusFilter==="done" ? "Aún no completas ninguna" : "¡Todo al día! 🎉");
+      }
+      list.innerHTML = `<div class="empty"><span class="ico">📝</span>${msg}</div>`;
+    } else {
+      for(const t of visible){
+        const li=document.createElement("li");
+        if(t.done) li.classList.add("done");
+        if(t.important) li.classList.add("important");
+        li.dataset.id=t.id;
+        const di=dueInfo(t);
+        const subs=t.subtasks||[];
+        const sdone=subs.filter(s=>s.done).length;
+        const isOpen=expanded.has(t.id);
+        const subLabel = subs.length ? `${isOpen?"▾":"▸"} ${sdone}/${subs.length}` : "▸";
+        const subClass = (subs.length?"has-sub":"") + (subs.length && sdone===subs.length ? " complete":"");
+        let html=`<div class="row">
+          <span class="grip" draggable="true" title="Arrastra para reordenar">⠿</span>
+          <div class="check" role="checkbox" aria-checked="${t.done}" tabindex="0">
+            <svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>
+          </div>
+          <div class="body">
+            <span class="txt">${escapeHtml(t.text)}</span>
+            <div class="meta">
+              <select class="catsel" title="Categoría">${catOptions(t.cat)}</select>
+              <button class="due-btn ${di.cls}${t.due?" has-due":""}" title="${t.due?"Cambiar fecha (clic) · quitar (clic derecho)":"Poner fecha de vencimiento"}">${di.label}</button>
+              <input type="date" class="due-input" value="${t.due||""}">
+              <button class="subbtn ${subClass}" title="${subs.length?"Ver/ocultar subtareas":"Agregar subtareas"}">${subLabel}</button>
+            </div>
+          </div>
+          <button class="star ${t.important?"on":""}" title="Marcar como importante">${t.important?"★":"☆"}</button>
+          <button class="edit" title="Editar">✎</button>
+          <button class="del" title="Eliminar">✕</button>
+        </div>`;
+        if(isOpen){
+          html+=`<div class="subpanel">`;
+          if(subs.length){
+            const pct = Math.round(sdone/subs.length*100);
+            html+=`<div class="subhead ${sdone===subs.length?"complete":""}">
+              <div class="subbar"><span style="width:${pct}%"></span></div>
+              <span class="subcount">${sdone}/${subs.length}</span>
+            </div>`;
+          }
+          for(const s of subs){
+            html+=`<div class="subitem ${s.done?"done":""}" data-sid="${s.id}">
+              <div class="subcheck"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div>
+              <span class="subtxt">${escapeHtml(s.text)}</span>
+              <button class="subdel" title="Eliminar subtarea">✕</button>
+            </div>`;
+          }
+          html+=`<div class="subadd-row"><input class="subadd" type="text" maxlength="160" placeholder="Agregar subtarea y Enter…"></div></div>`;
+        }
+        li.innerHTML=html;
+
+        const grip=li.querySelector(".grip");
+        if(reorderable){
+          wireDrag(li, t.id);
+        } else {
+          grip.draggable=false; grip.classList.add("locked");
+          grip.title="Para arrastrar: orden «Manual» y sin interruptores de prioridad/vencimiento";
+        }
+        li.querySelector(".check").onclick = () => toggle(t.id);
+        li.querySelector(".check").onkeydown = e => {if(e.key===" "||e.key==="Enter"){e.preventDefault();toggle(t.id);}};
+        li.querySelector(".txt").onclick = () => toggle(t.id);
+        li.querySelector(".txt").ondblclick = () => startEdit(t.id, li);
+        const sel=li.querySelector(".catsel");
+        styleCatSel(sel, t.cat);
+        sel.onchange = () => { t.cat = sel.value || null; save(); render(); };
+        const dueBtn=li.querySelector(".due-btn"), dueInput=li.querySelector(".due-input");
+        dueBtn.onclick = () => { try{ dueInput.showPicker(); }catch(e){ dueInput.focus(); dueInput.click(); } };
+        dueBtn.oncontextmenu = e => { e.preventDefault(); if(t.due){ t.due=null; save(); render(); } };
+        dueInput.onchange = () => { t.due = dueInput.value || null; save(); render(); };
+        const star=li.querySelector(".star");
+        star.onclick = () => { t.important = !t.important; save(); render(); };
+        const willOpen = !isOpen;
+        li.querySelector(".subbtn").onclick = () => {
+          if(willOpen) expanded.add(t.id); else expanded.delete(t.id);
+          render();
+          if(willOpen){ const el=list.querySelector(`li[data-id="${t.id}"] .subadd`); if(el) el.focus(); }
+        };
+        li.querySelector(".edit").onclick = () => startEdit(t.id, li);
+        li.querySelector(".del").onclick = () => remove(t.id, li);
+
+        if(isOpen){
+          li.querySelectorAll(".subitem").forEach(siEl=>{
+            const sid=siEl.dataset.sid;
+            siEl.querySelector(".subcheck").onclick = () => toggleSub(t, sid);
+            siEl.querySelector(".subtxt").onclick = () => toggleSub(t, sid);
+            siEl.querySelector(".subtxt").ondblclick = () => editSub(t, sid, siEl);
+            siEl.querySelector(".subdel").onclick = () => removeSub(t, sid);
+          });
+          const subadd=li.querySelector(".subadd");
+          subadd.onkeydown = e => { if(e.key==="Enter"){ e.preventDefault(); addSub(t, subadd.value); } };
+        }
+        list.appendChild(li);
+      }
+    }
+    updateStats();
+  }
+
+  // ----- Orden con prioridad/vencimiento que sobreescriben -----
+  function todayStr(){
+    const d=new Date(), p=n=>String(n).padStart(2,"0");
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+  }
+  function dueVal(t){ return t.due ? Date.parse(t.due) : Infinity; }
+  function dueInfo(t){
+    if(!t.due) return {cls:"", label:"📅"};
+    const today=todayStr();
+    const cls = t.done ? "due-done" : (t.due<today ? "overdue" : (t.due===today ? "today" : "upcoming"));
+    const [y,m,d]=t.due.split("-");
+    const label = t.due===today ? "Hoy" : `${d}/${m}`;
+    return {cls, label};
+  }
+  function sortKeys(){
+    const ks=[];
+    if(prioFirst) ks.push((a,b)=> (a.important?0:1) - (b.important?0:1));   // importantes arriba
+    if(dueFirst)  ks.push((a,b)=> dueVal(a) - dueVal(b));                   // antes vence, antes va (vencidas primero)
+    if(sortMode==="az") ks.push((a,b)=> a.text.localeCompare(b.text,"es",{sensitivity:"base",numeric:true}));
+    else if(sortMode==="za") ks.push((a,b)=> b.text.localeCompare(a.text,"es",{sensitivity:"base",numeric:true}));
+    else if(sortMode==="cat"){ const rank=id=>{const i=cats.findIndex(c=>c.id===id);return i<0?cats.length:i;}; ks.push((a,b)=> rank(a.cat)-rank(b.cat)); }
+    else if(sortMode==="pending") ks.push((a,b)=> (a.done?1:0) - (b.done?1:0));
+    return ks;
+  }
+
+  // ----- Categorias -----
+  function catOptions(sel){
+    let o = `<option value="">Sin categoría</option>`;
+    for(const c of cats)
+      o += `<option value="${c.id}" ${c.id===sel?"selected":""}>${escapeHtml(c.name)}</option>`;
+    return o;
+  }
+  function styleCatSel(sel, catId){
+    const c = catById(catId);
+    if(c){
+      sel.classList.add("has-cat");
+      sel.style.background = c.color+"26";
+      sel.style.color = c.color;
+    } else {
+      sel.classList.remove("has-cat");
+      sel.style.background = ""; sel.style.color = "";
+    }
+  }
+  function renderCats(){
+    catBar.innerHTML = "";
+    catBar.insertAdjacentHTML("beforeend", `<span class="clbl" title="Categorías">🏷️</span>`);
+    catBar.appendChild(makeChip("Todas", null, catFilter==="all", () => { catFilter="all"; render(); }));
+    for(const c of cats){
+      catBar.appendChild(makeChip(c.name, c, catFilter===c.id, () => {
+        catFilter = catFilter===c.id ? "all" : c.id; render();
+      }));
+    }
+    if(addingCat){
+      const inp=document.createElement("input");
+      inp.className="newcat"; inp.placeholder="Nombre…"; inp.maxLength=24;
+      catBar.appendChild(inp); inp.focus();
+      let done=false;
+      const fin=keep=>{
+        if(done) return; done=true;
+        addingCat=false;
+        if(keep) createCat(inp.value);
+        render();
+      };
+      inp.onkeydown=e=>{ if(e.key==="Enter"){e.preventDefault();fin(true);} else if(e.key==="Escape"){e.preventDefault();fin(false);} };
+      inp.onblur=()=>fin(true);
+    } else {
+      const add=document.createElement("button");
+      add.className="chip-add"; add.textContent="+ Nueva";
+      add.onclick=()=>{ addingCat=true; render(); };
+      catBar.appendChild(add);
+    }
+  }
+  function makeChip(name, cat, active, onClick){
+    const b=document.createElement("button");
+    b.className="chip"+(active?" active":"");
+    const color = cat ? cat.color : "var(--accent)";
+    if(active) b.style.background = color;
+    let html = "";
+    if(cat) html += `<span class="dot" style="background:${active?'#fff':cat.color}"></span>`;
+    html += `<span>${escapeHtml(name)}</span>`;
+    if(cat && active) html += `<span class="x" title="Eliminar categoría">✕</span>`;
+    b.innerHTML = html;
+    b.onclick = e => {
+      if(e.target.classList.contains("x")){ e.stopPropagation(); deleteCat(cat); return; }
+      onClick();
+    };
+    return b;
+  }
+  function createCat(name){
+    name = (name||"").trim(); if(!name) return;
+    const color = PALETTE[cats.length % PALETTE.length];
+    const cat = {id:"c"+Date.now().toString(36), name, color};
+    cats.push(cat); saveCats();
+    catFilter = cat.id;
+  }
+  function deleteCat(cat){
+    if(!cat) return;
+    if(!confirm(`¿Eliminar la categoría "${cat.name}"? Sus tareas quedarán sin categoría.`)) return;
+    tasks.forEach(t=>{ if(t.cat===cat.id) t.cat=null; });
+    cats = cats.filter(c=>c.id!==cat.id);
+    if(catFilter===cat.id) catFilter="all";
+    saveCats(); save(); render();
+  }
+
+  function updateStats(){
+    const total=tasks.length, done=tasks.filter(t=>t.done).length;
+    const pending=total-done;
+    const pct = total ? Math.round(done/total*100) : 0;
+    $("#bar").style.width = pct+"%";
+    $("#progressPct").textContent = pct+"%";
+    $("#progressLabel").textContent = total
+      ? `${done} de ${total} completadas` : "Sin tareas todavía";
+    $("#count").textContent = pending===1 ? "1 pendiente" : `${pending} pendientes`;
+  }
+
+  function add(text){
+    text=text.trim(); if(!text) return;
+    const cat = catFilter!=="all" ? catFilter : null;
+    tasks.unshift({id:Date.now()+""+Math.random().toString(36).slice(2,6), text, done:false, cat, important:false, due:null});
+    save(); render();
+  }
+  function toggle(id){
+    const t=tasks.find(x=>x.id===id); if(!t) return;
+    t.done=!t.done;
+    if(t.subtasks && t.subtasks.length){
+      if(t.done){
+        // Marcar el padre: recordar el estado actual y completar todas.
+        const mem={};
+        t.subtasks.forEach(s=>{ mem[s.id]=s.done; s.done=true; });
+        t.subMemory=mem;
+      } else {
+        // Desmarcar el padre: restaurar lo que había (no borra lo ya marcado).
+        const mem=t.subMemory;
+        t.subtasks.forEach(s=>{ s.done = (mem && (s.id in mem)) ? mem[s.id] : false; });
+        delete t.subMemory;
+      }
+    }
+    save(); render();
+  }
+  // El padre refleja sus subtareas: se completa solo cuando todas están hechas.
+  function syncParentFromSubs(t){
+    if(t.subtasks && t.subtasks.length) t.done = t.subtasks.every(s=>s.done);
+  }
+  function remove(id, li){
+    li.classList.add("removing");
+    setTimeout(()=>{ tasks=tasks.filter(x=>x.id!==id); save(); render(); }, 230);
+  }
+  let dragId=null;
+  function clearDropMarks(){
+    list.querySelectorAll("li").forEach(x=>x.classList.remove("drop-before","drop-after"));
+  }
+  function wireDrag(li, id){
+    const grip=li.querySelector(".grip");
+    grip.ondragstart=e=>{
+      dragId=id; li.classList.add("dragging");
+      e.dataTransfer.effectAllowed="move";
+      e.dataTransfer.setData("text/plain", id);
+    };
+    grip.ondragend=()=>{ dragId=null; li.classList.remove("dragging"); clearDropMarks(); };
+    li.ondragover=e=>{
+      if(dragId===null || dragId===id) return;
+      e.preventDefault(); e.dataTransfer.dropEffect="move";
+      const r=li.getBoundingClientRect();
+      const after = e.clientY > r.top + r.height/2;
+      li.classList.toggle("drop-after", after);
+      li.classList.toggle("drop-before", !after);
+    };
+    li.ondragleave=()=>li.classList.remove("drop-before","drop-after");
+    li.ondrop=e=>{
+      if(dragId===null || dragId===id) return;
+      e.preventDefault();
+      const after=li.classList.contains("drop-after");
+      reorder(dragId, id, after);
+    };
+  }
+  function reorder(fromId, toId, after){
+    const from=tasks.findIndex(x=>x.id===fromId);
+    if(from<0) return;
+    const item=tasks.splice(from,1)[0];
+    let to=tasks.findIndex(x=>x.id===toId);
+    if(after) to++;
+    tasks.splice(to,0,item);
+    save(); render();
+  }
+
+  // ----- Subtareas -----
+  function addSub(t, text){
+    text=text.trim(); if(!text) return;
+    if(!t.subtasks) t.subtasks=[];
+    t.subtasks.push({id:"s"+Date.now().toString(36)+Math.random().toString(36).slice(2,5), text, done:false});
+    expanded.add(t.id);
+    delete t.subMemory;
+    syncParentFromSubs(t);   // una subtarea nueva sin hacer reabre el padre
+    save(); render();
+    const el=list.querySelector(`li[data-id="${t.id}"] .subadd`); if(el) el.focus();
+  }
+  function toggleSub(t, sid){
+    const s=(t.subtasks||[]).find(x=>x.id===sid); if(!s) return;
+    s.done=!s.done;
+    delete t.subMemory;   // cambio manual: la memoria del padre ya no aplica
+    syncParentFromSubs(t);
+    save(); render();
+  }
+  function removeSub(t, sid){
+    t.subtasks=(t.subtasks||[]).filter(x=>x.id!==sid);
+    delete t.subMemory;
+    syncParentFromSubs(t);
+    save(); render();
+  }
+  function editSub(t, sid, siEl){
+    const s=(t.subtasks||[]).find(x=>x.id===sid); if(!s) return;
+    const span=siEl.querySelector(".subtxt");
+    const inp=document.createElement("input");
+    inp.type="text"; inp.className="subedit"; inp.value=s.text; inp.maxLength=160;
+    span.replaceWith(inp); inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length);
+    let closed=false;
+    const fin=keep=>{
+      if(closed) return; closed=true;
+      if(keep){ const v=inp.value.trim(); if(v){ s.text=v; save(); } }
+      render();
+    };
+    inp.onkeydown=e=>{ if(e.key==="Enter"){e.preventDefault();fin(true);} else if(e.key==="Escape"){e.preventDefault();fin(false);} };
+    inp.onblur=()=>fin(true);
+  }
+
+  function startEdit(id, li){
+    const t=tasks.find(x=>x.id===id); if(!t) return;
+    const span=li.querySelector(".txt");
+    const inp=document.createElement("input");
+    inp.type="text"; inp.className="edit-input"; inp.value=t.text; inp.maxLength=200;
+    span.replaceWith(inp);
+    inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length);
+    let closed=false;
+    const finish=keep=>{
+      if(closed) return; closed=true;
+      if(keep){ const v=inp.value.trim(); if(v){ t.text=v; save(); } }
+      render();
+    };
+    inp.onkeydown=e=>{
+      if(e.key==="Enter"){ e.preventDefault(); finish(true); }
+      else if(e.key==="Escape"){ e.preventDefault(); finish(false); }
+    };
+    inp.onblur=()=>finish(true);
+  }
+
+  $("#form").onsubmit = e => { e.preventDefault(); add(input.value); input.value=""; input.focus(); };
+
+  document.querySelectorAll(".filters button").forEach(b=>{
+    b.onclick=()=>{
+      document.querySelector(".filters .active").classList.remove("active");
+      b.classList.add("active"); statusFilter=b.dataset.filter; render();
+    };
+  });
+
+  const sortSel=$("#sort");
+  sortSel.value = sortMode;
+  sortSel.onchange = () => {
+    sortMode = sortSel.value;
+    localStorage.setItem(SORTKEY, sortMode);
+    syncServer();
+    render();
+  };
+
+  const tPrio=$("#tPrio"), tDue=$("#tDue");
+  function refreshToggles(){ tPrio.classList.toggle("on",prioFirst); tDue.classList.toggle("on",dueFirst); }
+  tPrio.onclick = () => { prioFirst=!prioFirst; persistLocal(); syncServer(); refreshToggles(); render(); };
+  tDue.onclick  = () => { dueFirst=!dueFirst;  persistLocal(); syncServer(); refreshToggles(); render(); };
+  refreshToggles();
+
+  $("#clearDone").onclick = () => {
+    if(!tasks.some(t=>t.done)) return;
+    tasks=tasks.filter(t=>!t.done); save(); render();
+  };
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  // ----- Diagrama de Ishikawa (espina de pescado) -----
+  let ikZoom=1, ikBaseW=0, ikBaseH=0;
+  const ikTrunc=(s,n)=> s.length>n ? s.slice(0,n-1)+"…" : s;
+  const ikTextW=(s,fp)=> s.length*fp*0.56;
+
+  const ikCheck=(cx,cy,r,col,done)=>{
+    let g=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" fill="${done?col:'none'}" stroke="${col}" stroke-width="2"/>`;
+    if(done) g+=`<path d="M${(cx-r*0.5).toFixed(1)},${cy.toFixed(1)} l${(r*0.32).toFixed(1)},${(r*0.4).toFixed(1)} l${(r*0.7).toFixed(1)},${(-r*0.8).toFixed(1)}" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`;
+    return g;
+  };
+
+  function buildIshikawaSVG(){
+    // Estilo clásico: pocas espinas = CATEGORÍAS (caja de color en la punta);
+    // causas en dos columnas = TAREAS; sub-líneas = SUBTAREAS.
+    const groups=cats.map(c=>({name:c.name,color:c.color,tasks:tasks.filter(t=>t.cat===c.id)}));
+    const sinT=tasks.filter(t=>!t.cat||!catById(t.cat));
+    if(sinT.length) groups.push({name:"Sin categoría",color:"#94a3b8",tasks:sinT});
+    const bones=groups.filter(g=>g.tasks.length);
+
+    const ANG=64*Math.PI/180, sinA=Math.sin(ANG), cosA=Math.cos(ANG), tanA=Math.tan(ANG);
+    const taskFont=13, subFont=10.5, lineH=15, subLH=14, ulLen=104, leadGap=10, MAXSUB=5, rowGap=18, BOXH=30;
+    const subH=it=> (it.subs.length+(it.extra?1:0))*subLH;
+
+    bones.forEach(g=>{
+      g.tk=g.tasks.map(t=>{
+        let subs=(t.subtasks||[]).map(s=>({id:s.id,text:ikTrunc(s.text,22),done:s.done}));
+        let extra=0; if(subs.length>MAXSUB){extra=subs.length-MAXSUB; subs=subs.slice(0,MAXSUB);}
+        let w=ikTextW(t.text,taskFont);
+        subs.forEach(s=> w=Math.max(w, ikTextW(s.text,subFont)+14));
+        return {t,subs,extra,w};
+      });
+      g.rows=[];
+      for(let k=0;k<g.tk.length;k+=2) g.rows.push([g.tk[k], g.tk[k+1]||null]);
+      let d=52;
+      g.rows.forEach(r=>{ const sh=Math.max(subH(r[0]), r[1]?subH(r[1]):0); r.textD=d; r.rh=lineH+sh; d+=r.rh+rowGap; });
+      g.boneVert=d+44;
+      g.boneLen=g.boneVert/sinA;
+      g.maxW=Math.max.apply(null, g.tk.map(x=>x.w));
+      g.boxW=Math.max(98, ikTextW(g.name.toUpperCase(),13)+30);
+    });
+
+    const leftPad=46, slotPad=24;
+    let cum=0;
+    bones.forEach(g=>{
+      g.halfL=Math.max(leadGap+g.maxW+30, g.boneLen*cosA+g.boxW/2)+12;
+      g.halfR=leadGap+g.maxW+30+12;
+      g.attachX=leftPad+cum+g.halfL;
+      cum+=g.halfL+g.halfR+slotPad;
+    });
+    const maxVert=Math.max.apply(null, bones.map(g=>g.boneVert));
+    const spineY=maxVert+36;
+    const headX=leftPad+cum+24;
+    const headBoxW=184, headBoxH=96;
+    const W=headX+headBoxW+44, H=spineY+maxVert+36;
+
+    let s=`<svg class="ishikawa" viewBox="0 0 ${Math.round(W)} ${Math.round(H)}" xmlns="http://www.w3.org/2000/svg">`;
+    s+=`<style>.ik-spine{stroke:var(--text);stroke-width:5;fill:none;stroke-linecap:round}.ik-arrow,.ik-head{fill:var(--accent)}.ik-headtxt{fill:#fff}.ik-tasklbl{fill:var(--text)}.ik-sublbl{fill:var(--muted)}.ik-tasklbl.done,.ik-sublbl.done{opacity:.45;text-decoration:line-through}.ik-hit{fill:transparent;pointer-events:all}.ik-node{cursor:pointer}.ik-node:hover .ik-hit{fill:var(--accent-soft)}</style>`;
+
+    // espina + cabeza
+    s+=`<line class="ik-spine" x1="22" y1="${spineY}" x2="${headX+6}" y2="${spineY}"/>`;
+    s+=`<polygon class="ik-arrow" points="${headX+4},${spineY-14} ${headX+28},${spineY} ${headX+4},${spineY+14}"/>`;
+    s+=`<rect class="ik-head" x="${headX+26}" y="${spineY-headBoxH/2}" width="${headBoxW}" height="${headBoxH}" rx="8"/>`;
+    s+=`<text class="ik-headtxt" x="${headX+26+headBoxW/2}" y="${spineY+1}" font-size="20" font-weight="800" text-anchor="middle" dominant-baseline="middle" letter-spacing="1">MIS TAREAS</text>`;
+
+    bones.forEach((g,bi)=>{
+      const dirY=bi%2===0?-1:1, col=g.color, ax=g.attachX;
+      const tipX=ax-g.boneLen*cosA, tipY=spineY+dirY*g.boneVert;
+      // espina de la categoría
+      s+=`<line x1="${ax}" y1="${spineY}" x2="${tipX.toFixed(1)}" y2="${tipY.toFixed(1)}" stroke="${col}" stroke-width="4" stroke-linecap="round"/>`;
+      // caja de categoría en la punta
+      const cyBox=tipY + dirY*(BOXH/2+4);
+      s+=`<rect x="${(tipX-g.boxW/2).toFixed(1)}" y="${(cyBox-BOXH/2).toFixed(1)}" width="${g.boxW}" height="${BOXH}" rx="9" fill="${col}33" stroke="${col}" stroke-width="2.5"/>`;
+      s+=`<text x="${tipX.toFixed(1)}" y="${cyBox.toFixed(1)}" font-size="13" font-weight="800" fill="var(--text)" text-anchor="middle" dominant-baseline="middle" letter-spacing=".5">${escapeHtml(g.name.toUpperCase())}</text>`;
+      // causas (tareas) en dos columnas
+      g.rows.forEach(r=>{
+        const cause=(it,side)=>{
+          if(!it) return;
+          const t=it.t;
+          const anchor=side<0?"end":"start";
+          const textY=spineY + dirY*r.textD, ulY=textY+6;
+          const px=ax - Math.abs(ulY-spineY)/tanA;   // punto de la espina a esa altura
+          const inner=px + side*leadGap;              // junto a la espina
+          const tw=Math.max(ikTextW(t.text,taskFont), 38);
+          const outer=inner + side*(tw+12);
+          // subrayado bajo el texto
+          s+=`<line x1="${inner.toFixed(1)}" y1="${ulY.toFixed(1)}" x2="${outer.toFixed(1)}" y2="${ulY.toFixed(1)}" stroke="${col}" stroke-width="1.6"/>`;
+          const xa=Math.min(inner,outer)-6, xb=Math.max(inner,outer)+6;
+          s+=`<g class="ik-node" data-task="${t.id}">`;
+          s+=`<rect class="ik-hit" x="${xa.toFixed(1)}" y="${(textY-9).toFixed(1)}" width="${(xb-xa).toFixed(1)}" height="20" rx="5"/>`;
+          s+=`<text class="ik-tasklbl${t.done?' done':''}" x="${(inner+side*9).toFixed(1)}" y="${textY.toFixed(1)}" font-size="${taskFont}" font-weight="700" text-anchor="${anchor}" dominant-baseline="middle">${escapeHtml(t.text)}</text>`;
+          s+=ikCheck(inner,ulY,5,col,t.done);
+          s+=`</g>`;
+          let yy=ulY;
+          it.subs.forEach(su=>{
+            yy+=subLH;
+            const slw=ikTextW(su.text,subFont);
+            const stx=inner + side*9;
+            const sxa=Math.min(inner, stx+side*slw)-5, sxb=Math.max(inner, stx+side*slw)+5;
+            s+=`<g class="ik-node" data-sub="${t.id}::${su.id}">`;
+            s+=`<rect class="ik-hit" x="${sxa.toFixed(1)}" y="${(yy-8).toFixed(1)}" width="${(sxb-sxa).toFixed(1)}" height="15" rx="4"/>`;
+            s+=ikCheck(inner,yy,3.5,col,su.done);
+            s+=`<text class="ik-sublbl${su.done?' done':''}" x="${stx.toFixed(1)}" y="${yy.toFixed(1)}" font-size="${subFont}" text-anchor="${anchor}" dominant-baseline="middle">${escapeHtml(su.text)}</text>`;
+            s+=`</g>`;
+          });
+          if(it.extra){ yy+=subLH; s+=`<text x="${(inner+side*9).toFixed(1)}" y="${yy.toFixed(1)}" font-size="${subFont}" fill="var(--muted)" opacity="0.7" text-anchor="${anchor}" dominant-baseline="middle">(+${it.extra} más)</text>`; }
+        };
+        cause(r[0],-1); cause(r[1],1);
+      });
+    });
+    s+=`</svg>`;
+    return {svg:s, W:Math.round(W), H:Math.round(H)};
+  }
+  function refreshDiagram(){
+    if($("#diagramOverlay").hidden) return;
+    const sc=$("#diagramScroll"), sl=sc.scrollLeft, st=sc.scrollTop;
+    const r=buildIshikawaSVG(); sc.innerHTML=`<div id="ikCanvas">${r.svg}</div>`; ikBaseW=r.W; ikBaseH=r.H;
+    applyIkZoom(); sc.scrollLeft=sl; sc.scrollTop=st;
+  }
+
+  const IK_EDGE=60;   // píxeles del diagrama que deben quedar siempre visibles (límite del paneo)
+  function ikPad(){
+    const sc=$("#diagramScroll");
+    return { x:Math.max(0, sc.clientWidth-IK_EDGE), y:Math.max(0, sc.clientHeight-IK_EDGE) };
+  }
+  function applyIkZoom(){
+    const sc=$("#diagramScroll"), svg=sc.querySelector("svg"), canvas=document.getElementById("ikCanvas");
+    if(!svg || !canvas) return;
+    const sw=Math.round(ikBaseW*ikZoom), sh=Math.round(ikBaseH*ikZoom), p=ikPad();
+    svg.setAttribute("width", sw); svg.setAttribute("height", sh);
+    svg.style.left=p.x+"px"; svg.style.top=p.y+"px";
+    canvas.style.width=(sw+2*p.x)+"px"; canvas.style.height=(sh+2*p.y)+"px";
+    $("#ikZoomLbl").textContent=Math.round(ikZoom*100)+"%";
+  }
+  function ikCenter(){
+    const sc=$("#diagramScroll"), p=ikPad();
+    sc.scrollLeft = p.x + ikBaseW*ikZoom/2 - sc.clientWidth/2;
+    sc.scrollTop  = p.y + ikBaseH*ikZoom/2 - sc.clientHeight/2;
+  }
+  function ikFit(){
+    const sc=$("#diagramScroll");
+    const aw=sc.clientWidth-48, ah=sc.clientHeight-48;
+    if(!(ikBaseW>0 && ikBaseH>0)){ ikZoom=1; applyIkZoom(); return; }
+    const zw=aw/ikBaseW, zh=ah/ikBaseH;
+    let z=Math.min(zw,zh);
+    if(z<0.4) z=Math.min(1.3, zh);   // muy ancho: priorizar legibilidad y permitir scroll horizontal
+    ikZoom = Math.min(1.6, Math.max(0.2, z));
+    applyIkZoom();
+  }
+  function openIshikawa(){
+    const scroll=$("#diagramScroll");
+    if(!tasks.length){
+      scroll.innerHTML=`<p style="text-align:center;color:var(--muted);margin-top:60px">Agregá tareas para generar el diagrama.</p>`;
+      $("#diagramOverlay").hidden=false; return;
+    }
+    const r=buildIshikawaSVG();
+    scroll.innerHTML=`<div id="ikCanvas">${r.svg}</div>`; ikBaseW=r.W; ikBaseH=r.H;
+    $("#diagramOverlay").hidden=false;
+    ikFit(); ikCenter();
+  }
+  function ikExportPNG(){
+    const svg=$("#diagramScroll").querySelector("svg"); if(!svg) return;
+    const cs=getComputedStyle(document.documentElement);
+    const clone=svg.cloneNode(true);
+    clone.setAttribute("width",ikBaseW); clone.setAttribute("height",ikBaseH);
+    let data=new XMLSerializer().serializeToString(clone)
+      .replace(/var\((--[a-z0-9-]+)\)/gi,(m,v)=> (cs.getPropertyValue(v).trim()||"#000"));
+    const scale=2, bg=(cs.getPropertyValue('--bg2').trim()||'#15131f');
+    const url=URL.createObjectURL(new Blob([data],{type:"image/svg+xml;charset=utf-8"}));
+    const img=new Image();
+    img.onload=()=>{
+      const cv=document.createElement("canvas");
+      cv.width=ikBaseW*scale; cv.height=ikBaseH*scale;
+      const ctx=cv.getContext("2d");
+      ctx.fillStyle=bg; ctx.fillRect(0,0,cv.width,cv.height);
+      ctx.setTransform(scale,0,0,scale,0,0);
+      ctx.drawImage(img,0,0);
+      URL.revokeObjectURL(url);
+      cv.toBlob(b=>{ const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="ishikawa-mis-tareas.png"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); },"image/png");
+    };
+    img.src=url;
+  }
+  // Paneo arrastrando con clic izquierdo
+  let ikPan=null, ikDragged=false;
+  (()=>{
+    const dsc=$("#diagramScroll");
+    dsc.addEventListener("mousedown",(e)=>{
+      if($("#diagramOverlay").hidden) return;
+      if(e.button!==0 && e.button!==1 && e.button!==2) return;   // izq, medio o derecho
+      if(e.button===1 || e.button===2) e.preventDefault();        // evitar autoscroll / selección
+      ikPan={x:e.clientX, y:e.clientY, sl:dsc.scrollLeft, st:dsc.scrollTop};
+      ikDragged=false;
+    });
+    dsc.addEventListener("contextmenu",(e)=> e.preventDefault());  // sin menú al usar el botón derecho
+    window.addEventListener("mousemove",(e)=>{
+      if(!ikPan) return;
+      const dx=e.clientX-ikPan.x, dy=e.clientY-ikPan.y;
+      if(!ikDragged && Math.abs(dx)+Math.abs(dy)>4){ ikDragged=true; dsc.classList.add("panning"); }
+      if(ikDragged){ dsc.scrollLeft=ikPan.sl-dx; dsc.scrollTop=ikPan.st-dy; }
+    });
+    window.addEventListener("mouseup",()=>{ if(ikPan){ ikPan=null; dsc.classList.remove("panning"); } });
+  })();
+
+  $("#diagramScroll").onclick=(e)=>{
+    if(ikDragged){ ikDragged=false; return; }   // fue un arrastre: no togglear
+    const node = e.target.closest && e.target.closest(".ik-node");
+    if(!node) return;
+    if(node.dataset.task){
+      toggle(node.dataset.task);
+    } else if(node.dataset.sub){
+      const [tid,sid]=node.dataset.sub.split("::");
+      const t=tasks.find(x=>x.id===tid); if(t) toggleSub(t,sid);
+    }
+    refreshDiagram();
+  };
+  $("#diagramScroll").addEventListener("wheel",(e)=>{
+    if($("#diagramOverlay").hidden || !ikBaseW) return;
+    e.preventDefault();
+    const sc=$("#diagramScroll"), rect=sc.getBoundingClientRect();
+    const old=ikZoom;
+    ikZoom=Math.min(4, Math.max(0.1, ikZoom*(e.deltaY<0?1.12:1/1.12)));
+    const r=ikZoom/old, p=ikPad();
+    const sx=e.clientX-rect.left+sc.scrollLeft-p.x, sy=e.clientY-rect.top+sc.scrollTop-p.y;
+    applyIkZoom();
+    sc.scrollLeft=p.x+sx*r-(e.clientX-rect.left);
+    sc.scrollTop=p.y+sy*r-(e.clientY-rect.top);
+  },{passive:false});
+  $("#ishikawaBtn").onclick=openIshikawa;
+  $("#ikClose").onclick=()=>$("#diagramOverlay").hidden=true;
+  $("#ikZoomIn").onclick=()=>{ ikZoom=Math.min(3,ikZoom+0.15); applyIkZoom(); };
+  $("#ikZoomOut").onclick=()=>{ ikZoom=Math.max(0.2,ikZoom-0.15); applyIkZoom(); };
+  $("#ikFit").onclick=ikFit;
+  $("#ikPng").onclick=ikExportPNG;
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !$("#diagramOverlay").hidden) $("#diagramOverlay").hidden=true; });
+
+  // ----- Respaldo: menú, exportar, importar, estado -----
+  const backupBtn=$("#backupBtn"), backupMenu=$("#backupMenu");
+  backupBtn.onclick = e => { e.stopPropagation(); backupMenu.hidden = !backupMenu.hidden; };
+  backupMenu.onclick = e => e.stopPropagation();
+  document.addEventListener("click", () => backupMenu.hidden = true);
+
+  function updateBackupStatus(){
+    const s=$("#backupStatus");
+    s.textContent = backupOn ? "Guardado en este navegador ✓" : "Sin guardar";
+    s.classList.toggle("on", backupOn);
+  }
+
+  function exportData(){
+    const blob=new Blob([JSON.stringify(stateSnapshot(),null,2)], {type:"application/json"});
+    const d=new Date(), p=n=>String(n).padStart(2,"0");
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download=`mis-tareas-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.json`;
+    a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  }
+  function importData(file){
+    if(!file) return;
+    const rd=new FileReader();
+    rd.onload=()=>{
+      let d; try{ d=JSON.parse(rd.result); }catch(e){ d=null; }
+      if(!d || !Array.isArray(d.tasks)){ alert("El archivo no es un respaldo válido de Mis Tareas."); return; }
+      if(!confirm("Esto reemplazará tus tareas y categorías actuales por las del respaldo. ¿Continuar?")) return;
+      tasks = d.tasks;
+      cats = Array.isArray(d.cats) ? d.cats : [];
+      sortMode = d.sort || "manual";
+      prioFirst = d.prioFirst===true;
+      dueFirst  = d.dueFirst===true;
+      if(d.theme){ localStorage.setItem(THEMEKEY, d.theme); applyTheme(d.theme); }
+      statusFilter="all"; catFilter="all"; sortSel.value=sortMode; refreshToggles();
+      persistLocal(); syncServer(); render();
+    };
+    rd.readAsText(file);
+  }
+  $("#exportBtn").onclick = () => { exportData(); backupMenu.hidden=true; };
+  $("#importBtn").onclick = () => $("#importFile").click();
+  $("#importFile").onchange = ev => { importData(ev.target.files[0]); ev.target.value=""; backupMenu.hidden=true; };
+
+  // ----- Arranque: cargar el estado desde el archivo (vía Electron) -----
+  async function boot(){
+    try{
+      const d = await window.api.load();
+      backupOn = true;
+      if(d && Array.isArray(d.tasks) && (d.tasks.length || (Array.isArray(d.cats)&&d.cats.length))){
+        tasks = d.tasks; cats = d.cats||[]; sortMode = d.sort||sortMode;
+        if(typeof d.prioFirst==="boolean") prioFirst=d.prioFirst;
+        if(typeof d.dueFirst==="boolean")  dueFirst=d.dueFirst;
+        if(d.theme){ localStorage.setItem(THEMEKEY, d.theme); applyTheme(d.theme); }
+        sortSel.value = sortMode; refreshToggles();
+        persistLocal();
+      } else {
+        // archivo vacío: migramos lo que haya en localStorage
+        syncServer();
+      }
+    }catch(e){ backupOn = false; }
+    updateBackupStatus();
+    render();
+    input.focus();
+  }
+  boot();
+</script>
+</body>
+</html>
