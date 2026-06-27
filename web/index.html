@@ -335,6 +335,24 @@
   .toggle:hover{background:var(--accent-soft)}
   .toggle.on{background:var(--accent);color:#fff;border-color:transparent}
   .sort-right{display:flex;align-items:center;gap:8px;flex:none}
+
+  /* Pantalla de login */
+  .login-overlay{position:fixed;inset:0;z-index:200;
+    background:linear-gradient(155deg,var(--bg1),var(--bg2));
+    display:flex;align-items:center;justify-content:center;padding:24px}
+  .login-overlay[hidden]{display:none}
+  .login-card{max-width:380px;width:100%;text-align:center;
+    background:var(--card);border:1px solid var(--card-border);border-radius:20px;
+    padding:36px 28px;box-shadow:var(--shadow)}
+  .login-logo{font-size:2.6rem;margin-bottom:6px}
+  .login-card h1{font-size:1.6rem;font-weight:800;margin-bottom:8px;letter-spacing:-.02em}
+  .login-card p{color:var(--muted);font-size:.92rem;line-height:1.5;margin:0 0 20px}
+  .login-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;
+    border:none;cursor:pointer;background:var(--accent);color:#fff;font:inherit;font-size:1rem;font-weight:700;
+    padding:13px 18px;border-radius:12px;transition:filter .2s,transform .1s}
+  .login-btn:hover{filter:brightness(1.08)}
+  .login-btn:active{transform:scale(.98)}
+  .login-note{font-size:.78rem;color:var(--muted);margin:16px 0 0}
 </style>
 </head>
 <body>
@@ -357,6 +375,8 @@
       <button id="exportBtn">⬇️&nbsp; Exportar respaldo (.json)</button>
       <button id="importBtn">⬆️&nbsp; Importar respaldo</button>
       <input type="file" id="importFile" accept="application/json,.json" hidden>
+      <div class="pop-sep"></div>
+      <button id="logoutBtn">🚪&nbsp; Cerrar sesión</button>
     </div>
 
     <div class="progress-wrap">
@@ -417,6 +437,73 @@
     </div>
     <div class="diagram-scroll" id="diagramScroll"></div>
   </div>
+
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+      <div class="login-logo">📋</div>
+      <h1>Mis Tareas</h1>
+      <p>Iniciá sesión para acceder a tus tareas en todos tus dispositivos.</p>
+      <button id="loginGithub" class="login-btn">
+        <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        Iniciar sesión con GitHub
+      </button>
+      <p class="login-note">Tus tareas quedan privadas, asociadas a tu cuenta.</p>
+    </div>
+  </div>
+
+  <!-- Auth + sincronización en la nube (Supabase) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SB_URL = "https://cnckiuyhjkerrmojmmzd.supabase.co";
+    const SB_KEY = "sb_publishable_la1bz_UgCtFHO6jpVRDaVg_WYmLYTB1";
+    const sb = window.supabase.createClient(SB_URL, SB_KEY);
+    let sbUser = null;
+
+    // window.api respaldado por Supabase (lee/escribe la fila del usuario actual)
+    window.api = {
+      load: async () => {
+        try {
+          if(!sbUser) return {};
+          const { data } = await sb.from("user_data").select("data").eq("user_id", sbUser.id).maybeSingle();
+          return (data && data.data) || {};
+        } catch(e){ return {}; }
+      },
+      save: async (snap) => {
+        try {
+          if(!sbUser) return false;
+          const { error } = await sb.from("user_data").upsert({ user_id: sbUser.id, data: snap, updated_at: new Date().toISOString() });
+          return !error;
+        } catch(e){ return false; }
+      }
+    };
+
+    function ikStartApp(){
+      document.getElementById("loginOverlay").hidden = true;
+      const lo=document.getElementById("logoutBtn");
+      if(lo && sbUser) lo.textContent = "🚪 Cerrar sesión (" + (sbUser.email || sbUser.user_metadata?.user_name || "cuenta") + ")";
+      if(typeof boot === "function") boot();   // (re)carga datos del usuario y renderiza
+    }
+    function ikShowLogin(){ document.getElementById("loginOverlay").hidden = false; }
+
+    window.ikLogout = async () => {
+      await sb.auth.signOut();
+      ["mis_tareas_v1","mis_tareas_cats","mis_tareas_sort","mis_tareas_prioFirst","mis_tareas_dueFirst","mis_tareas_web","mis_tareas_theme"].forEach(k=>localStorage.removeItem(k));
+      location.reload();
+    };
+
+    sb.auth.getSession().then(({ data:{ session } })=>{
+      sbUser = session ? session.user : null;
+      if(session) ikStartApp(); else ikShowLogin();
+    });
+    sb.auth.onAuthStateChange((event, session)=>{
+      sbUser = session ? session.user : null;
+      if(session) ikStartApp(); else ikShowLogin();
+    });
+
+    document.getElementById("loginGithub").onclick = ()=>
+      sb.auth.signInWithOAuth({ provider:"github", options:{ redirectTo: window.location.origin } });
+    document.getElementById("logoutBtn").onclick = ()=> window.ikLogout();
+  </script>
 
 <script>
   // Versión web: persistencia en localStorage del navegador (reemplaza el IPC de Electron).
@@ -1125,7 +1212,7 @@
 
   function updateBackupStatus(){
     const s=$("#backupStatus");
-    s.textContent = backupOn ? "Guardado en este navegador ✓" : "Sin guardar";
+    s.textContent = backupOn ? "Sincronizado en la nube ✓" : "Sincronizando…";
     s.classList.toggle("on", backupOn);
   }
 
