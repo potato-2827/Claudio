@@ -2,8 +2,13 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Mis Tareas</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#6366f1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mis Tareas">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%236366f1'/%3E%3Cpath d='M28 52l14 14 30-32' fill='none' stroke='white' stroke-width='10' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
   :root{
@@ -336,6 +341,30 @@
   .toggle.on{background:var(--accent);color:#fff;border-color:transparent}
   .sort-right{display:flex;align-items:center;gap:8px;flex:none}
 
+  /* Buscador */
+  .search-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;
+    background:var(--input-bg);border:1px solid var(--row-border);border-radius:12px;padding:0 12px}
+  .search-row:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .search-ico{font-size:.9rem;opacity:.7;flex:none}
+  .search-input{flex:1;border:none;background:transparent;color:var(--text);
+    font:inherit;font-size:.92rem;padding:9px 0;outline:none}
+  .search-input::placeholder{color:var(--muted)}
+  .search-clear{border:none;background:transparent;color:var(--muted);cursor:pointer;
+    font-size:.85rem;padding:4px;border-radius:7px;flex:none}
+  .search-clear:hover{color:var(--danger);background:rgba(239,68,68,.12)}
+
+  /* Banner de recordatorios */
+  .reminder-banner{display:flex;align-items:center;gap:10px;margin-bottom:10px;
+    background:rgba(245,158,11,.14);border:1px solid rgba(245,158,11,.4);border-radius:12px;
+    padding:10px 12px;font-size:.85rem;font-weight:600;color:var(--text)}
+  .reminder-banner[hidden]{display:none}
+  .reminder-banner .rb-text{flex:1}
+  .reminder-banner .rb-overdue{color:var(--danger)}
+  .reminder-banner button{border:none;cursor:pointer;font:inherit;font-weight:700;border-radius:8px;padding:5px 10px;font-size:.8rem}
+  .reminder-banner .rb-view{background:var(--accent);color:#fff}
+  .reminder-banner .rb-close{background:transparent;color:var(--muted);padding:5px 7px}
+  .reminder-banner .rb-close:hover{color:var(--danger)}
+
   /* Pantalla de login */
   .login-overlay{position:fixed;inset:0;z-index:200;
     background:linear-gradient(155deg,var(--bg1),var(--bg2));
@@ -379,6 +408,7 @@
       <button id="importBtn">⬆️&nbsp; Importar respaldo</button>
       <input type="file" id="importFile" accept="application/json,.json" hidden>
       <div class="pop-sep"></div>
+      <button id="notifBtn">🔔&nbsp; Activar avisos de vencimiento</button>
       <button id="logoutBtn">🚪&nbsp; Cerrar sesión</button>
     </div>
 
@@ -419,6 +449,14 @@
         </select>
       </div>
     </div>
+
+    <div class="search-row">
+      <span class="search-ico">🔎</span>
+      <input type="text" id="searchInput" class="search-input" placeholder="Buscar tareas…" autocomplete="off">
+      <button id="searchClear" class="search-clear" title="Limpiar búsqueda" hidden>✕</button>
+    </div>
+
+    <div class="reminder-banner" id="reminderBanner" hidden></div>
 
     <ul id="list"></ul>
 
@@ -531,6 +569,8 @@
   let prioFirst = localStorage.getItem("mis_tareas_prioFirst")==="1";  // importantes arriba (sobreescribe)
   let dueFirst  = localStorage.getItem("mis_tareas_dueFirst")==="1";   // por vencer arriba (sobreescribe)
   let addingCat = false;
+  let searchQuery = "";         // texto del buscador (en minúsculas)
+  let reminderDismissed = false; // banner de vencimientos descartado en esta sesión
   const expanded = new Set();   // ids de tareas con subtareas desplegadas
 
   const PALETTE=["#6366f1","#ec4899","#f59e0b","#10b981","#3b82f6","#8b5cf6","#ef4444","#14b8a6","#f97316","#0ea5e9"];
@@ -582,10 +622,16 @@
 
   function render(){
     renderCats();
+    renderReminderBanner();
     let visible = tasks.filter(t=>{
       const st = statusFilter==="all" ? true : statusFilter==="done" ? t.done : !t.done;
       const ct = catFilter==="all" ? true : t.cat===catFilter;
-      return st && ct;
+      let sq = true;
+      if(searchQuery){
+        sq = t.text.toLowerCase().includes(searchQuery)
+          || (t.subtasks||[]).some(s=>s.text.toLowerCase().includes(searchQuery));
+      }
+      return st && ct && sq;
     });
     // Orden = (interruptores que sobreescriben) + (orden elegido como desempate).
     // El arrastre manual queda como desempate final gracias a que sort() es estable.
@@ -975,6 +1021,59 @@
     tasks=tasks.filter(t=>!t.done); save(); render();
   };
 
+  // ----- Buscador -----
+  const searchInput=$("#searchInput"), searchClear=$("#searchClear");
+  searchInput.oninput = () => {
+    searchQuery = searchInput.value.trim().toLowerCase();
+    searchClear.hidden = !searchInput.value;
+    render();
+  };
+  searchClear.onclick = () => { searchInput.value=""; searchQuery=""; searchClear.hidden=true; render(); searchInput.focus(); };
+
+  // ----- Recordatorios de vencimiento -----
+  function dueCounts(){
+    const today=todayStr(); let overdue=0, todayN=0;
+    for(const t of tasks){
+      if(t.done || !t.due) continue;
+      if(t.due < today) overdue++; else if(t.due === today) todayN++;
+    }
+    return {overdue, today:todayN};
+  }
+  function renderReminderBanner(){
+    const b=$("#reminderBanner"); const {overdue, today}=dueCounts();
+    if(reminderDismissed || (overdue===0 && today===0)){ b.hidden=true; return; }
+    const parts=[];
+    if(overdue) parts.push(`<span class="rb-overdue">${overdue} vencida${overdue>1?'s':''}</span>`);
+    if(today) parts.push(`${today} para hoy`);
+    b.innerHTML = `<span>🔔</span><span class="rb-text">Tenés ${parts.join(" y ")}.</span>`
+      + `<button class="rb-view">Ver</button><button class="rb-close" title="Ocultar">✕</button>`;
+    b.hidden=false;
+    b.querySelector(".rb-view").onclick = () => { dueFirst=true; statusFilter="all"; persistLocal(); refreshToggles(); render(); };
+    b.querySelector(".rb-close").onclick = () => { reminderDismissed=true; b.hidden=true; };
+  }
+  async function enableNotifications(){
+    if(!("Notification" in window)){ alert("Tu navegador no soporta notificaciones."); return; }
+    const perm = await Notification.requestPermission();
+    if(perm==="granted"){ localStorage.setItem("mis_tareas_notif","1"); notifyDueOnce(); }
+  }
+  function notifyDueOnce(){
+    if(!("Notification" in window) || Notification.permission!=="granted") return;
+    if(localStorage.getItem("mis_tareas_notif")!=="1") return;
+    const {overdue, today}=dueCounts();
+    if(overdue===0 && today===0) return;
+    const parts=[];
+    if(overdue) parts.push(`${overdue} vencida${overdue>1?'s':''}`);
+    if(today) parts.push(`${today} para hoy`);
+    try { new Notification("Mis Tareas", { body:`Tenés ${parts.join(" y ")}.`, tag:"mis-tareas-"+todayStr(), icon:"/icon-192.png" }); } catch(e){}
+  }
+  const notifBtn=$("#notifBtn");
+  if(notifBtn) notifBtn.onclick = enableNotifications;
+
+  // ----- PWA: service worker (instalable + abre offline) -----
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", ()=> navigator.serviceWorker.register("/sw.js").catch(()=>{}));
+  }
+
   function escapeHtml(s){
     return s.replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   }
@@ -1274,6 +1373,7 @@
     }catch(e){ backupOn = false; }
     updateBackupStatus();
     render();
+    notifyDueOnce();   // aviso del navegador si hay vencimientos (si están activados)
     input.focus();
   }
   boot();
