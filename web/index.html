@@ -72,6 +72,7 @@
     display:grid;place-items:center;transition:transform .2s,background .3s;flex:none;
   }
   .theme-btn:hover{transform:scale(1.08) rotate(-8deg)}
+  .theme-btn.on{background:var(--accent);color:#fff}
   .head-actions{display:flex;gap:8px;flex:none}
 
   /* Diagrama de Ishikawa */
@@ -110,7 +111,7 @@
   [data-theme="dark"] .pop-status.on{color:#5fe08a}
   .pop-sep{height:1px;background:var(--row-border);margin:3px 6px}
 
-  .progress-wrap{margin:18px 0 4px}
+  .progress-wrap{margin:14px 0 4px}
   .progress-meta{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-bottom:7px}
   .progress-meta b{color:var(--accent)}
   .bar{height:8px;border-radius:99px;background:var(--accent-soft);overflow:hidden}
@@ -118,7 +119,7 @@
     background:linear-gradient(90deg,var(--accent),#a78bfa);
     transition:width .5s cubic-bezier(.4,0,.2,1)}
 
-  form{display:flex;gap:9px;margin:18px 0 14px}
+  form{display:flex;gap:9px;margin:14px 0 12px}
   input[type=text]{
     flex:1;border:1px solid var(--row-border);background:var(--input-bg);
     color:var(--text);padding:12px 15px;border-radius:14px;font-size:.95rem;
@@ -134,7 +135,7 @@
   .add:hover{filter:brightness(1.08)}
   .add:active{transform:scale(.92)}
 
-  .filters{display:flex;gap:6px;margin-bottom:10px}
+  .filters{display:flex;gap:6px;margin-bottom:8px}
   .filters button{
     border:none;cursor:pointer;background:transparent;color:var(--muted);
     padding:6px 13px;border-radius:99px;font-size:.82rem;font-weight:600;
@@ -259,7 +260,7 @@
   .clear{border:none;background:transparent;color:var(--muted);cursor:pointer;
     font-size:.8rem;font-weight:600;padding:5px 9px;border-radius:8px;transition:.2s}
   .clear:hover{color:var(--danger);background:rgba(239,68,68,.1)}
-  .sort-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .sort-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap}
   .sort-lbl{font-size:.76rem;color:var(--muted);font-weight:600}
   .sortsel{
     border:1px solid var(--row-border);background:var(--input-bg);color:var(--text);
@@ -272,7 +273,7 @@
   .grip.locked{opacity:.25!important;cursor:not-allowed}
 
   /* Barra de categorias */
-  .cat-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:-2px 0 12px}
+  .cat-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:-2px 0 8px}
   .cat-bar .clbl{font-size:1rem;margin-right:1px;opacity:.6}
   .chip{
     border:1px solid var(--row-border);cursor:pointer;background:transparent;
@@ -342,8 +343,9 @@
   .sort-right{display:flex;align-items:center;gap:8px;flex:none}
 
   /* Buscador */
-  .search-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;
+  .search-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;
     background:var(--input-bg);border:1px solid var(--row-border);border-radius:12px;padding:0 12px}
+  .search-row[hidden]{display:none}
   .search-row:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
   .search-ico{font-size:.9rem;opacity:.7;flex:none}
   .search-input{flex:1;border:none;background:transparent;color:var(--text);
@@ -395,6 +397,7 @@
         <div class="date" id="date"></div>
       </div>
       <div class="head-actions">
+        <button class="theme-btn" id="searchToggle" title="Buscar tareas">🔎</button>
         <button class="theme-btn" id="ishikawaBtn" title="Diagrama de Ishikawa">🐟</button>
         <button class="theme-btn" id="backupBtn" title="Respaldo de datos">💾</button>
         <button class="theme-btn" id="themeBtn" title="Cambiar tema">🌙</button>
@@ -450,7 +453,7 @@
       </div>
     </div>
 
-    <div class="search-row">
+    <div class="search-row" id="searchRow" hidden>
       <span class="search-ico">🔎</span>
       <input type="text" id="searchInput" class="search-input" placeholder="Buscar tareas…" autocomplete="off">
       <button id="searchClear" class="search-clear" title="Limpiar búsqueda" hidden>✕</button>
@@ -1021,14 +1024,22 @@
     tasks=tasks.filter(t=>!t.done); save(); render();
   };
 
-  // ----- Buscador -----
-  const searchInput=$("#searchInput"), searchClear=$("#searchClear");
+  // ----- Buscador (colapsable) -----
+  const searchInput=$("#searchInput"), searchClear=$("#searchClear"), searchRow=$("#searchRow"), searchToggle=$("#searchToggle");
+  searchToggle.onclick = () => {
+    const show = searchRow.hidden;
+    searchRow.hidden = !show;
+    searchToggle.classList.toggle("on", show);
+    if(show){ searchInput.focus(); }
+    else { searchInput.value=""; searchQuery=""; searchClear.hidden=true; render(); }
+  };
   searchInput.oninput = () => {
     searchQuery = searchInput.value.trim().toLowerCase();
     searchClear.hidden = !searchInput.value;
     render();
   };
   searchClear.onclick = () => { searchInput.value=""; searchQuery=""; searchClear.hidden=true; render(); searchInput.focus(); };
+  searchInput.onkeydown = (e) => { if(e.key==="Escape"){ searchToggle.onclick(); } };
 
   // ----- Recordatorios de vencimiento -----
   function dueCounts(){
