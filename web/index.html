@@ -260,6 +260,26 @@
   .clear{border:none;background:transparent;color:var(--muted);cursor:pointer;
     font-size:.8rem;font-weight:600;padding:5px 9px;border-radius:8px;transition:.2s}
   .clear:hover{color:var(--danger);background:rgba(239,68,68,.1)}
+
+  /* Barra y menú de filtros */
+  .filterbar{display:flex;align-items:center;gap:10px;margin-bottom:8px;min-width:0}
+  .filter-wrap{position:relative;flex:none}
+  .filter-btn{display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+    border:1px solid var(--row-border);background:var(--input-bg);color:var(--text);
+    font:inherit;font-size:.85rem;font-weight:700;padding:7px 14px;border-radius:99px;transition:.2s}
+  .filter-btn:hover{border-color:var(--accent)}
+  .filter-btn.active{background:var(--accent);color:#fff;border-color:transparent}
+  .filter-summary{font-size:.82rem;color:var(--muted);font-weight:600;min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .filter-pop{top:calc(100% + 8px);left:0;right:auto;min-width:250px;max-width:330px;
+    max-height:70vh;overflow:auto;display:flex;flex-direction:column;gap:0}
+  .fp-section{padding:9px 4px;border-bottom:1px solid var(--row-border)}
+  .fp-section:last-child{border-bottom:none}
+  .fp-label{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;
+    color:var(--muted);margin-bottom:8px}
+  .filter-pop .filters,.filter-pop .cat-bar,.filter-pop .prio-toggles{margin:0}
+  .filter-pop .sortsel{width:100%}
+
   .sort-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap}
   .sort-lbl{font-size:.76rem;color:var(--muted);font-weight:600}
   .sortsel{
@@ -428,29 +448,42 @@
       <button class="add" type="submit" title="Agregar">+</button>
     </form>
 
-    <div class="filters">
-      <button data-filter="all" class="active">Todas</button>
-      <button data-filter="active">Pendientes</button>
-      <button data-filter="done">Completadas</button>
-    </div>
-
-    <div class="cat-bar" id="catBar"></div>
-
-    <div class="sort-row">
-      <div class="prio-toggles">
-        <button class="toggle" id="tPrio" title="Las tareas importantes van arriba, por encima del orden elegido">⭐ Importantes</button>
-        <button class="toggle" id="tDue" title="Las tareas por vencer van arriba, por encima del orden elegido">⏰ Vencimiento</button>
+    <div class="filterbar">
+      <div class="filter-wrap">
+        <button class="filter-btn" id="filterBtn">⚙️ Filtros</button>
+        <div class="popover filter-pop" id="filterPop" hidden>
+          <div class="fp-section">
+            <div class="fp-label">Mostrar</div>
+            <div class="filters">
+              <button data-filter="all" class="active">Todas</button>
+              <button data-filter="active">Pendientes</button>
+              <button data-filter="done">Completadas</button>
+            </div>
+          </div>
+          <div class="fp-section">
+            <div class="fp-label">Categoría</div>
+            <div class="cat-bar" id="catBar"></div>
+          </div>
+          <div class="fp-section">
+            <div class="fp-label">Subir al tope (sobre el orden)</div>
+            <div class="prio-toggles">
+              <button class="toggle" id="tPrio" title="Las tareas importantes van arriba">⭐ Importantes</button>
+              <button class="toggle" id="tDue" title="Las tareas por vencer van arriba">⏰ Vencimiento</button>
+            </div>
+          </div>
+          <div class="fp-section">
+            <div class="fp-label">Ordenar</div>
+            <select id="sort" class="sortsel" title="Ordenar tareas">
+              <option value="manual">↕ Manual</option>
+              <option value="az">A → Z</option>
+              <option value="za">Z → A</option>
+              <option value="cat">Por categoría</option>
+              <option value="pending">Pendientes primero</option>
+            </select>
+          </div>
+        </div>
       </div>
-      <div class="sort-right">
-        <span class="sort-lbl">Ordenar</span>
-        <select id="sort" class="sortsel" title="Ordenar tareas">
-          <option value="manual">↕ Manual</option>
-          <option value="az">A → Z</option>
-          <option value="za">Z → A</option>
-          <option value="cat">Por categoría</option>
-          <option value="pending">Pendientes primero</option>
-        </select>
-      </div>
+      <span class="filter-summary" id="filterSummary">Todas</span>
     </div>
 
     <div class="search-row" id="searchRow" hidden>
@@ -626,6 +659,7 @@
   function render(){
     renderCats();
     renderReminderBanner();
+    updateFilterSummary();
     let visible = tasks.filter(t=>{
       const st = statusFilter==="all" ? true : statusFilter==="done" ? t.done : !t.done;
       const ct = catFilter==="all" ? true : t.cat===catFilter;
@@ -1023,6 +1057,25 @@
     if(!tasks.some(t=>t.done)) return;
     tasks=tasks.filter(t=>!t.done); save(); render();
   };
+
+  // ----- Botón de Filtros (menú desplegable) -----
+  const filterBtn=$("#filterBtn"), filterPop=$("#filterPop");
+  filterBtn.onclick = e => { e.stopPropagation(); filterPop.hidden = !filterPop.hidden; };
+  filterPop.onclick = e => e.stopPropagation();
+  document.addEventListener("click", () => filterPop.hidden = true);
+  function updateFilterSummary(){
+    const parts=[];
+    if(statusFilter==="active") parts.push("Pendientes");
+    else if(statusFilter==="done") parts.push("Completadas");
+    if(catFilter!=="all"){ const c=catById(catFilter); if(c) parts.push(c.name); }
+    if(prioFirst) parts.push("⭐");
+    if(dueFirst) parts.push("⏰");
+    const sn={az:"A→Z", za:"Z→A", cat:"por categoría", pending:"pendientes 1°"};
+    if(sortMode!=="manual" && sn[sortMode]) parts.push("orden "+sn[sortMode]);
+    const active = parts.length>0;
+    $("#filterSummary").textContent = active ? parts.join(" · ") : "Todas";
+    filterBtn.classList.toggle("active", active);
+  }
 
   // ----- Buscador (colapsable) -----
   const searchInput=$("#searchInput"), searchClear=$("#searchClear"), searchRow=$("#searchRow"), searchToggle=$("#searchToggle");
