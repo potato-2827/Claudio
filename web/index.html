@@ -421,6 +421,7 @@
         <button class="theme-btn" id="ishikawaBtn" title="Diagrama de Ishikawa">🐟</button>
         <button class="theme-btn" id="backupBtn" title="Respaldo de datos">💾</button>
         <button class="theme-btn" id="themeBtn" title="Cambiar tema">🌙</button>
+        <button class="theme-btn" id="logoutBtn" title="Cerrar sesión">🚪</button>
       </div>
     </header>
 
@@ -432,7 +433,6 @@
       <input type="file" id="importFile" accept="application/json,.json" hidden>
       <div class="pop-sep"></div>
       <button id="notifBtn">🔔&nbsp; Activar avisos de vencimiento</button>
-      <button id="logoutBtn">🚪&nbsp; Cerrar sesión</button>
     </div>
 
     <div class="progress-wrap">
@@ -561,7 +561,7 @@
     function ikStartApp(){
       document.getElementById("loginOverlay").hidden = true;
       const lo=document.getElementById("logoutBtn");
-      if(lo && sbUser) lo.textContent = "🚪 Cerrar sesión (" + (sbUser.email || sbUser.user_metadata?.user_name || "cuenta") + ")";
+      if(lo && sbUser) lo.title = "Cerrar sesión (" + (sbUser.email || sbUser.user_metadata?.user_name || "cuenta") + ")";
       if(typeof boot === "function") boot();   // (re)carga datos del usuario y renderiza
     }
     function ikShowLogin(){ document.getElementById("loginOverlay").hidden = false; }
@@ -585,7 +585,7 @@
       sb.auth.signInWithOAuth({ provider:"github", options:{ redirectTo: window.location.origin } });
     document.getElementById("loginGoogle").onclick = ()=>
       sb.auth.signInWithOAuth({ provider:"google", options:{ redirectTo: window.location.origin } });
-    document.getElementById("logoutBtn").onclick = ()=> window.ikLogout();
+    document.getElementById("logoutBtn").onclick = ()=> { if(confirm("¿Cerrar sesión?")) window.ikLogout(); };
   </script>
 
 <script>
