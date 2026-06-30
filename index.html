@@ -208,7 +208,7 @@
   .subbtn:hover{background:var(--accent-soft);color:var(--accent)}
   .subbtn.complete{color:#16a34a}
   .subbtn.open{background:var(--accent-soft);color:var(--accent)}
-  .chev{display:inline-block;transition:transform .2s ease}
+  .chev{display:block;flex:none;transform-origin:50% 50%;transition:transform .35s cubic-bezier(.4,0,.2,1)}
   .subbtn.open .chev{transform:rotate(90deg)}
 
   .hovwrap{position:relative;display:inline-flex}
@@ -750,9 +750,10 @@
         const atts=t.attachments||[];
         const attOpen=attExpanded.has(t.id);
         const panelOpen=isOpen||attOpen;
-        const subLabel = `<span class="chev">▸</span> Subtareas${subs.length?` ${sdone}/${subs.length}`:""}`;
+        const CHEV=`<svg class="chev" viewBox="0 0 12 16" width="7" height="11"><polyline points="1.5,1.5 9.5,8 1.5,14.5" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+        const subLabel = `${CHEV} Subtareas${subs.length?` ${sdone}/${subs.length}`:""}`;
         const subClass = (subs.length?"has-sub":"") + (subs.length && sdone===subs.length ? " complete":"") + (isOpen?" open":"");
-        const attLabel = `<span class="chev">▸</span> Archivos${atts.length?` (${atts.length})`:""}`;
+        const attLabel = `${CHEV} Archivos${atts.length?` (${atts.length})`:""}`;
         const attClass = (atts.length?"has-sub":"") + (attOpen?" open":"");
         let html=`<div class="row">
           <span class="grip" draggable="true" title="Arrastra para reordenar">⠿</span>
