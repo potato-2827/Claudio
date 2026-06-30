@@ -391,6 +391,9 @@
   .due-btn.today{background:var(--accent-soft);color:var(--accent)}
   .due-btn.upcoming{background:var(--accent-soft);color:var(--accent);opacity:1}
   .due-btn.due-done{opacity:.55;text-decoration:line-through}
+  .subdue-btn{font-size:.66rem;padding:2px 7px}
+  .subitem:hover .subdue-btn{display:inline-block}
+  .subdue-btn.inherited{font-style:italic}
 
   /* Prioridad / importante */
   .star{
@@ -831,9 +834,17 @@
             }
             for(const s of subs){
               const sNotesOpen = subNotesExpanded.has(s.id);
+              const sInherited = !s.due && !!t.due;
+              const sEffDue = s.due || t.due || null;
+              const sdi = dueInfo({due:sEffDue, done:s.done});
+              const sDueTitle = sInherited
+                ? "Hereda la fecha de la tarea (clic para poner una propia)"
+                : (s.due ? "Cambiar fecha (clic) · quitar (clic derecho)" : "Poner fecha de vencimiento");
               html+=`<div class="subitem ${s.done?"done":""}" data-sid="${s.id}">
                 <div class="subcheck"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div>
                 <span class="subtxt">${escapeHtml(s.text)}</span>
+                <button class="due-btn subdue-btn ${sdi.cls}${sEffDue?" has-due":""}${sInherited?" inherited":""}" title="${sDueTitle}">${sdi.label}</button>
+                <input type="date" class="subdue-input" data-sid="${s.id}" value="${s.due||""}"${t.due?` max="${t.due}"`:""}>
                 <button class="subnotesbtn ${s.notes?"has-notes":""}${sNotesOpen?" open":""}" title="Ver/agregar notas de la subtarea">📝</button>
                 <button class="subdel" title="Eliminar subtarea">✕</button>
               </div>`;
@@ -887,7 +898,13 @@
         const dueBtn=li.querySelector(".due-btn"), dueInput=li.querySelector(".due-input");
         dueBtn.onclick = () => { try{ dueInput.showPicker(); }catch(e){ dueInput.focus(); dueInput.click(); } };
         dueBtn.oncontextmenu = e => { e.preventDefault(); e.stopPropagation(); if(t.due){ t.due=null; save(); render(); } };
-        dueInput.onchange = () => { t.due = dueInput.value || null; save(); render(); };
+        dueInput.onchange = () => {
+          t.due = dueInput.value || null;
+          if(t.due){   // recortar subtareas que ya tenian fecha propia posterior a la nueva
+            for(const s of t.subtasks||[]) if(s.due && s.due>t.due) s.due=t.due;
+          }
+          save(); render();
+        };
         const star=li.querySelector(".star");
         star.onclick = () => { t.important = !t.important; save(); render(); };
         li.oncontextmenu = e => openTaskMenu(e, t);
@@ -930,6 +947,19 @@
             siEl.querySelector(".subnotesbtn").onclick = () => {
               if(subNotesExpanded.has(sid)) subNotesExpanded.delete(sid); else subNotesExpanded.add(sid);
               render();
+            };
+            const sDueBtn=siEl.querySelector(".subdue-btn"), sDueInput=siEl.querySelector(".subdue-input");
+            sDueBtn.onclick = () => { try{ sDueInput.showPicker(); }catch(e){ sDueInput.focus(); sDueInput.click(); } };
+            sDueBtn.oncontextmenu = e => {
+              e.preventDefault(); e.stopPropagation();
+              const s=(t.subtasks||[]).find(x=>x.id===sid); if(!s || !s.due) return;
+              s.due=null; save(); render();
+            };
+            sDueInput.onchange = () => {
+              const s=(t.subtasks||[]).find(x=>x.id===sid); if(!s) return;
+              let v=sDueInput.value;
+              if(t.due && v && v>t.due) v=t.due;   // no puede vencer despues que la tarea
+              s.due=v||null; save(); render();
             };
           });
           li.querySelectorAll(".subnotes").forEach(taEl=>{
