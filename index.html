@@ -63,7 +63,8 @@
     padding:20px 20px 14px;
     display:flex;flex-direction:column;
   }
-  header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  header{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px}
+  .titles{order:1}
   .titles h1{font-size:1.5rem;font-weight:700;letter-spacing:-.02em}
   .titles .date{color:var(--muted);font-size:.82rem;margin-top:2px;text-transform:capitalize}
   .theme-btn{
@@ -73,7 +74,44 @@
   }
   .theme-btn:hover{transform:scale(1.08) rotate(-8deg)}
   .theme-btn.on{background:var(--accent);color:#fff}
-  .head-actions{display:flex;gap:8px;flex:none}
+  .head-actions{display:flex;gap:8px;flex:none;order:2}
+
+  .mini-cal{
+    order:3;flex:1 1 300px;max-width:300px;margin:6px auto 0;
+    border:1px solid var(--row-border);border-radius:14px;background:var(--card);
+    padding:9px 11px 11px;
+  }
+  .mc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .mc-head button{
+    border:none;background:transparent;color:var(--muted);cursor:pointer;
+    width:24px;height:24px;border-radius:8px;font-size:1rem;line-height:1;
+    display:grid;place-items:center;transition:.15s;
+  }
+  .mc-head button:hover{background:var(--accent-soft);color:var(--accent)}
+  #mcLabel{font-size:.8rem;font-weight:700;text-transform:capitalize}
+  .mc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+  .mc-dow{text-align:center;font-size:.6rem;font-weight:700;color:var(--muted);padding:2px 0 4px}
+  .mc-cell{
+    position:relative;aspect-ratio:1;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;border-radius:8px;
+    font-size:.72rem;color:var(--text);gap:2px;
+  }
+  .mc-cell.mc-empty{visibility:hidden}
+  .mc-cell.hovwrap{cursor:pointer}
+  .mc-cell.hovwrap:hover{background:var(--accent-soft)}
+  .mc-num{line-height:1}
+  .mc-cell.mc-today .mc-num{
+    color:#fff;background:var(--accent);border-radius:50%;
+    width:18px;height:18px;display:grid;place-items:center;font-weight:700;
+  }
+  .mc-dot{width:5px;height:5px;border-radius:50%;flex:none}
+  .mc-dot.due-overdue,.mc-dot.due-red{background:#ef4444}
+  .mc-dot.due-orange{background:#f59e0b}
+  .mc-dot.due-yellow{background:#84cc16}
+  .mc-dot.due-green{background:#22c55e}
+  .mc-grid .hovlist{left:50%;transform:translateX(-50%);top:calc(100% + 4px)}
+  .mc-grid .hovlist.mc-right{left:auto;right:-8px;transform:none}
+  .mc-grid .hovlist.mc-left{left:-8px;transform:none}
 
   .popover{
     position:absolute;top:62px;right:24px;z-index:30;min-width:218px;
@@ -478,6 +516,14 @@
         <h1>Mis Tareas</h1>
         <div class="date" id="date"></div>
       </div>
+      <div class="mini-cal" id="miniCal">
+        <div class="mc-head">
+          <button type="button" id="mcPrev" title="Mes anterior">‹</button>
+          <span id="mcLabel"></span>
+          <button type="button" id="mcNext" title="Mes siguiente">›</button>
+        </div>
+        <div class="mc-grid" id="mcGrid"></div>
+      </div>
       <div class="head-actions">
         <button class="theme-btn" id="notifBtn" title="Avisos de vencimiento">🔔</button>
         <button class="theme-btn" id="themeBtn" title="Cambiar tema">🌙</button>
@@ -665,6 +711,7 @@
   const expanded = new Set();   // ids de tareas con subtareas desplegadas
   const attExpanded = new Set(); // ids de tareas con el panel de archivos desplegado
   let lastToggleKey = null;      // que boton (sub/att de que tarea) se acaba de tocar, para animar solo ese
+  let calMonth = (()=>{ const d=new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); })();  // mini calendario: 1er día del mes mostrado
   const notesExpanded = new Set();    // ids de tareas con el panel de notas desplegado
   const subNotesExpanded = new Set(); // ids de subtareas con sus notas desplegadas
 
@@ -721,6 +768,7 @@
     renderCats();
     renderReminderBanner();
     updateFilterSummary();
+    renderMiniCal();
     let visible = tasks.filter(t=>{
       const st = statusFilter==="all" ? true : statusFilter==="done" ? t.done : !t.done;
       const ct = catFilter==="all" ? true : t.cat===catFilter;
@@ -1009,6 +1057,53 @@
     const cls = days<0 ? "due-overdue" : days<3 ? "due-red" : days<7 ? "due-orange" : days<14 ? "due-yellow" : "due-green";
     return {cls, label};
   }
+
+  // ----- Mini calendario -----
+  function renderMiniCal(){
+    const grid=$("#mcGrid"); if(!grid) return;
+    const y=calMonth.getFullYear(), m=calMonth.getMonth();
+    const label=calMonth.toLocaleDateString("es-ES",{month:"long",year:"numeric"});
+    $("#mcLabel").textContent = label.charAt(0).toUpperCase()+label.slice(1);
+
+    const dueMap=new Map();   // "YYYY-MM-DD" -> [tarea, ...]
+    for(const t of tasks){
+      if(t.done || !t.due) continue;
+      if(!dueMap.has(t.due)) dueMap.set(t.due, []);
+      dueMap.get(t.due).push(t);
+    }
+
+    const p=n=>String(n).padStart(2,"0");
+    const firstDow=(new Date(y,m,1).getDay()+6)%7;   // lunes=0
+    const daysInMonth=new Date(y,m+1,0).getDate();
+    const todayKey=todayStr();
+    const dowLabels=["L","M","X","J","V","S","D"];
+
+    let html=dowLabels.map(l=>`<div class="mc-dow">${l}</div>`).join("");
+    for(let i=0;i<firstDow;i++) html+=`<div class="mc-cell mc-empty"></div>`;
+    for(let day=1; day<=daysInMonth; day++){
+      const dateStr=`${y}-${p(m+1)}-${p(day)}`;
+      const items=dueMap.get(dateStr)||[];
+      const isToday=dateStr===todayKey;
+      const dow=(firstDow+day-1)%7;
+      if(items.length){
+        const days=daysUntil(dateStr);
+        const dotCls = days<0?"due-overdue":days<3?"due-red":days<7?"due-orange":days<14?"due-yellow":"due-green";
+        const align = dow<=1 ? "mc-left" : dow>=5 ? "mc-right" : "";
+        html+=`<div class="mc-cell hovwrap${isToday?" mc-today":""}">
+          <span class="mc-num">${day}</span>
+          <span class="mc-dot ${dotCls}"></span>
+          <div class="hovlist ${align}">${items.map(t=>
+            `<div class="hovrow">${escapeHtml(t.text)}</div>`).join("")}</div>
+        </div>`;
+      } else {
+        html+=`<div class="mc-cell${isToday?" mc-today":""}"><span class="mc-num">${day}</span></div>`;
+      }
+    }
+    grid.innerHTML=html;
+  }
+  $("#mcPrev").onclick = () => { calMonth=new Date(calMonth.getFullYear(), calMonth.getMonth()-1, 1); renderMiniCal(); };
+  $("#mcNext").onclick = () => { calMonth=new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 1); renderMiniCal(); };
+
   function sortKeys(){
     const ks=[];
     if(prioFirst) ks.push((a,b)=> (a.important?0:1) - (b.important?0:1));   // importantes arriba
