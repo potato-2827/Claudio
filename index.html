@@ -108,6 +108,8 @@
   .popover button:hover{background:var(--accent-soft)}
   .sort-opt.active{background:var(--accent);color:#fff}
   .sort-opt.active:hover{background:var(--accent)}
+  .ctxmenu{position:fixed;top:0;left:0;right:auto;z-index:50;min-width:190px}
+  .ctx-danger:hover{background:rgba(239,68,68,.12);color:var(--danger)}
   .pop-status{font-size:.74rem;color:var(--muted);padding:7px 11px 3px;font-weight:700}
   .pop-status.on{color:#15a34a}
   [data-theme="dark"] .pop-status.on{color:#5fe08a}
@@ -542,6 +544,12 @@
     </footer>
   </main>
 
+  <div class="popover ctxmenu" id="taskCtxMenu" hidden>
+    <button id="ctxStar"></button>
+    <button id="ctxEdit">✎ Editar</button>
+    <button id="ctxDel" class="ctx-danger">✕ Eliminar</button>
+  </div>
+
   <div class="diagram-overlay" id="diagramOverlay" hidden>
     <div class="diagram-bar">
       <h2>🐟 Diagrama de Ishikawa</h2>
@@ -846,10 +854,11 @@
         sel.onchange = () => { t.cat = sel.value || null; save(); render(); };
         const dueBtn=li.querySelector(".due-btn"), dueInput=li.querySelector(".due-input");
         dueBtn.onclick = () => { try{ dueInput.showPicker(); }catch(e){ dueInput.focus(); dueInput.click(); } };
-        dueBtn.oncontextmenu = e => { e.preventDefault(); if(t.due){ t.due=null; save(); render(); } };
+        dueBtn.oncontextmenu = e => { e.preventDefault(); e.stopPropagation(); if(t.due){ t.due=null; save(); render(); } };
         dueInput.onchange = () => { t.due = dueInput.value || null; save(); render(); };
         const star=li.querySelector(".star");
         star.onclick = () => { t.important = !t.important; save(); render(); };
+        li.oncontextmenu = e => openTaskMenu(e, t);
         const willOpen = !isOpen;
         li.querySelector(".subbtn").onclick = () => {
           if(willOpen) expanded.add(t.id); else expanded.delete(t.id);
@@ -1250,6 +1259,41 @@
 
     $("#filterSummary").textContent = fparts.length ? fparts.join(" · ") : "Todas";
   }
+
+  // ----- Menú contextual (clic derecho) de cada tarea -----
+  const ctxMenu=$("#taskCtxMenu"), ctxStar=$("#ctxStar"), ctxEdit=$("#ctxEdit"), ctxDel=$("#ctxDel");
+  let ctxTask=null;
+  function openTaskMenu(e, t){
+    e.preventDefault();
+    e.stopPropagation();
+    ctxTask = t;
+    ctxStar.textContent = t.important ? "☆ Quitar importante" : "★ Marcar importante";
+    ctxMenu.hidden = false;
+    const mw=ctxMenu.offsetWidth||190, mh=ctxMenu.offsetHeight||120;
+    let x=e.clientX, y=e.clientY;
+    if(x+mw > window.innerWidth)  x = window.innerWidth  - mw - 8;
+    if(y+mh > window.innerHeight) y = window.innerHeight - mh - 8;
+    ctxMenu.style.left = Math.max(8,x)+"px";
+    ctxMenu.style.top  = Math.max(8,y)+"px";
+  }
+  function closeTaskMenu(){ ctxMenu.hidden = true; ctxTask = null; }
+  ctxMenu.onclick = e => e.stopPropagation();
+  document.addEventListener("click", closeTaskMenu);
+  document.addEventListener("contextmenu", e => { if(!ctxMenu.contains(e.target)) closeTaskMenu(); });
+  document.addEventListener("scroll", closeTaskMenu, true);
+  ctxStar.onclick = () => { if(!ctxTask) return; ctxTask.important=!ctxTask.important; save(); render(); closeTaskMenu(); };
+  ctxEdit.onclick = () => {
+    if(!ctxTask) return;
+    const li=list.querySelector(`li[data-id="${ctxTask.id}"]`);
+    if(li) startEdit(ctxTask.id, li);
+    closeTaskMenu();
+  };
+  ctxDel.onclick = () => {
+    if(!ctxTask) return;
+    const li=list.querySelector(`li[data-id="${ctxTask.id}"]`);
+    remove(ctxTask.id, li);
+    closeTaskMenu();
+  };
 
   // ----- Buscador (colapsable) -----
   const searchInput=$("#searchInput"), searchClear=$("#searchClear"), searchRow=$("#searchRow"), searchToggle=$("#searchToggle");
