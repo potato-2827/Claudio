@@ -109,7 +109,6 @@
   .sort-opt.active{background:var(--accent);color:#fff}
   .sort-opt.active:hover{background:var(--accent)}
   .ctxmenu{position:fixed;top:0;left:0;right:auto;z-index:50;min-width:190px}
-  .ctx-danger:hover{background:rgba(239,68,68,.12);color:var(--danger)}
   .pop-status{font-size:.74rem;color:var(--muted);padding:7px 11px 3px;font-weight:700}
   .pop-status.on{color:#15a34a}
   [data-theme="dark"] .pop-status.on{color:#5fe08a}
@@ -558,9 +557,9 @@
   </main>
 
   <div class="popover ctxmenu" id="taskCtxMenu" hidden>
-    <button id="ctxStar"></button>
-    <button id="ctxEdit">✎ Editar</button>
-    <button id="ctxDel" class="ctx-danger">✕ Eliminar</button>
+    <button id="ctxAddSub">+ Agregar subtarea</button>
+    <button id="ctxAddAtt">+ Agregar archivo</button>
+    <button id="ctxAddNotes">+ Agregar notas</button>
   </div>
 
   <div class="diagram-overlay" id="diagramOverlay" hidden>
@@ -1316,13 +1315,12 @@
   }
 
   // ----- Menú contextual (clic derecho) de cada tarea -----
-  const ctxMenu=$("#taskCtxMenu"), ctxStar=$("#ctxStar"), ctxEdit=$("#ctxEdit"), ctxDel=$("#ctxDel");
+  const ctxMenu=$("#taskCtxMenu"), ctxAddSub=$("#ctxAddSub"), ctxAddAtt=$("#ctxAddAtt"), ctxAddNotes=$("#ctxAddNotes");
   let ctxTask=null;
   function openTaskMenu(e, t){
     e.preventDefault();
     e.stopPropagation();
     ctxTask = t;
-    ctxStar.textContent = t.important ? "☆ Quitar importante" : "★ Marcar importante";
     ctxMenu.hidden = false;
     const mw=ctxMenu.offsetWidth||190, mh=ctxMenu.offsetHeight||120;
     let x=e.clientX, y=e.clientY;
@@ -1336,17 +1334,29 @@
   document.addEventListener("click", closeTaskMenu);
   document.addEventListener("contextmenu", e => { if(!ctxMenu.contains(e.target)) closeTaskMenu(); });
   document.addEventListener("scroll", closeTaskMenu, true);
-  ctxStar.onclick = () => { if(!ctxTask) return; ctxTask.important=!ctxTask.important; save(); render(); closeTaskMenu(); };
-  ctxEdit.onclick = () => {
+  ctxAddSub.onclick = () => {
     if(!ctxTask) return;
-    const li=list.querySelector(`li[data-id="${ctxTask.id}"]`);
-    if(li) startEdit(ctxTask.id, li);
+    expanded.add(ctxTask.id);
+    lastToggleKey = "sub:"+ctxTask.id;
+    render();
+    const el=list.querySelector(`li[data-id="${ctxTask.id}"] .subadd`); if(el) el.focus();
     closeTaskMenu();
   };
-  ctxDel.onclick = () => {
+  ctxAddAtt.onclick = () => {
     if(!ctxTask) return;
-    const li=list.querySelector(`li[data-id="${ctxTask.id}"]`);
-    remove(ctxTask.id, li);
+    attExpanded.add(ctxTask.id);
+    lastToggleKey = "att:"+ctxTask.id;
+    attTargetTaskId = ctxTask.id;
+    render();
+    $("#attInput").click();
+    closeTaskMenu();
+  };
+  ctxAddNotes.onclick = () => {
+    if(!ctxTask) return;
+    notesExpanded.add(ctxTask.id);
+    lastToggleKey = "notes:"+ctxTask.id;
+    render();
+    const el=list.querySelector(`li[data-id="${ctxTask.id}"] .notesarea`); if(el) el.focus();
     closeTaskMenu();
   };
 
