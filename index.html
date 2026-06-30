@@ -636,6 +636,7 @@
   let sortMode = localStorage.getItem(SORTKEY) || "manual";  // manual | az | za | cat | pending
   let prioFirst = localStorage.getItem("mis_tareas_prioFirst")==="1";  // importantes arriba (sobreescribe)
   let dueFirst  = localStorage.getItem("mis_tareas_dueFirst")==="1";   // por vencer arriba (sobreescribe)
+  let emailNotif = localStorage.getItem("mis_tareas_emailNotif")==="1"; // recibir resumen diario por email (lo lee la función del servidor)
   let addingCat = false;
   let editingCat = null;  // id de la categoria en edicion (nombre/color), o null
   let searchQuery = "";         // texto del buscador (en minúsculas)
@@ -680,7 +681,7 @@
   }
   function stateSnapshot(){
     return { v:2, savedAt:new Date().toISOString(),
-             tasks, cats, sort:sortMode, prioFirst, dueFirst,
+             tasks, cats, sort:sortMode, prioFirst, dueFirst, emailNotif,
              theme:document.documentElement.dataset.theme };
   }
   let syncTimer=null;
@@ -1457,28 +1458,22 @@
     b.querySelector(".rb-view").onclick = () => { dueFirst=true; statusFilter="all"; persistLocal(); refreshToggles(); render(); };
     b.querySelector(".rb-close").onclick = () => { reminderDismissed=true; b.hidden=true; };
   }
-  async function enableNotifications(){
-    if(!("Notification" in window)){ alert("Tu navegador no soporta notificaciones."); return; }
-    if(localStorage.getItem("mis_tareas_notif")==="1"){
-      localStorage.removeItem("mis_tareas_notif");   // desactivar (el permiso del navegador queda como está)
-      return;
-    }
-    const perm = await Notification.requestPermission();
-    if(perm==="granted"){ localStorage.setItem("mis_tareas_notif","1"); notifyDueOnce(); }
-  }
-  function notifyDueOnce(){
-    if(!("Notification" in window) || Notification.permission!=="granted") return;
-    if(localStorage.getItem("mis_tareas_notif")!=="1") return;
-    const {overdue, today}=dueCounts();
-    if(overdue===0 && today===0) return;
-    const parts=[];
-    if(overdue) parts.push(`${overdue} vencida${overdue>1?'s':''}`);
-    if(today) parts.push(`${today} para hoy`);
-    try { new Notification("Mis Tareas", { body:`Tenés ${parts.join(" y ")}.`, tag:"mis-tareas-"+todayStr(), icon:"/icon-192.png" }); } catch(e){}
-  }
+  // Resumen diario por email: el botón solo guarda la preferencia (emailNotif),
+  // que se sincroniza a la cuenta del usuario. El envío lo hace una función del
+  // servidor (Supabase) una vez por día; acá no se manda nada.
   const notifBtn=$("#notifBtn");
-  if(localStorage.getItem("mis_tareas_notif")==="1" && "Notification" in window && Notification.permission==="granted") notifBtn.classList.add("on");
-  notifBtn.onclick = async () => { await enableNotifications(); notifBtn.classList.toggle("on", localStorage.getItem("mis_tareas_notif")==="1"); };
+  function refreshNotifBtn(){ notifBtn.classList.toggle("on", emailNotif); }
+  notifBtn.title = "Resumen diario de vencimientos por email";
+  refreshNotifBtn();
+  notifBtn.onclick = () => {
+    emailNotif = !emailNotif;
+    localStorage.setItem("mis_tareas_emailNotif", emailNotif?"1":"0");
+    refreshNotifBtn();
+    save();
+    alert(emailNotif
+      ? "Listo. Vas a recibir un resumen diario por email (a la dirección de tu cuenta) cuando tengas tareas vencidas o que venzan ese día."
+      : "Aviso por email desactivado.");
+  };
 
   // ----- PWA: service worker (instalable + abre offline) -----
   if("serviceWorker" in navigator){
@@ -1503,8 +1498,9 @@
         tasks = d.tasks; cats = d.cats||[]; sortMode = d.sort||sortMode;
         if(typeof d.prioFirst==="boolean") prioFirst=d.prioFirst;
         if(typeof d.dueFirst==="boolean")  dueFirst=d.dueFirst;
+        if(typeof d.emailNotif==="boolean"){ emailNotif=d.emailNotif; localStorage.setItem("mis_tareas_emailNotif", emailNotif?"1":"0"); }
         if(d.theme){ localStorage.setItem(THEMEKEY, d.theme); applyTheme(d.theme); }
-        refreshSortBtns(); refreshToggles();
+        refreshSortBtns(); refreshToggles(); refreshNotifBtn();
         persistLocal();
       } else {
         // archivo vacío: migramos lo que haya en localStorage
@@ -1512,7 +1508,6 @@
       }
     }catch(e){}
     render();
-    notifyDueOnce();   // aviso del navegador si hay vencimientos (si están activados)
     input.focus();
   }
   boot();
