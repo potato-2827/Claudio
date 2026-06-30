@@ -92,10 +92,6 @@
   .sort-opt.active{background:var(--accent);color:#fff}
   .sort-opt.active:hover{background:var(--accent)}
   .ctxmenu{position:fixed;top:0;left:0;right:auto;z-index:50;min-width:190px}
-  .pop-status{font-size:.74rem;color:var(--muted);padding:7px 11px 3px;font-weight:700}
-  .pop-status.on{color:#15a34a}
-  [data-theme="dark"] .pop-status.on{color:#5fe08a}
-  .pop-sep{height:1px;background:var(--row-border);margin:3px 6px}
 
   .progress-wrap{margin:14px 0 4px}
   .progress-meta{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-bottom:7px}
@@ -467,21 +463,11 @@
         <div class="date" id="date"></div>
       </div>
       <div class="head-actions">
-        <button class="theme-btn" id="backupBtn" title="Respaldo de datos">💾</button>
+        <button class="theme-btn" id="notifBtn" title="Avisos de vencimiento">🔔</button>
         <button class="theme-btn" id="themeBtn" title="Cambiar tema">🌙</button>
         <button class="theme-btn" id="logoutBtn" title="Cerrar sesión">🚪</button>
       </div>
     </header>
-
-    <div class="popover" id="backupMenu" hidden>
-      <div class="pop-status" id="backupStatus">Respaldo automático: —</div>
-      <div class="pop-sep"></div>
-      <button id="exportBtn">⬇️&nbsp; Exportar respaldo (.json)</button>
-      <button id="importBtn">⬆️&nbsp; Importar respaldo</button>
-      <input type="file" id="importFile" accept="application/json,.json" hidden>
-      <div class="pop-sep"></div>
-      <button id="notifBtn">🔔&nbsp; Activar avisos de vencimiento</button>
-    </div>
 
     <input type="file" id="attInput" multiple hidden
       accept=".pdf,.doc,.docx,.ppt,.pptx,image/png,image/jpeg,image/gif,image/webp">
@@ -661,8 +647,6 @@
   const subNotesExpanded = new Set(); // ids de subtareas con sus notas desplegadas
 
   const PALETTE=["#6366f1","#ec4899","#f59e0b","#10b981","#3b82f6","#8b5cf6","#ef4444","#14b8a6","#f97316","#0ea5e9"];
-  let backupOn=false;   // respaldo a archivo vía Electron (IPC)
-
   // ----- Adjuntos (Supabase Storage) -----
   const ATT_BUCKET="adjuntos";
   const ATT_ALLOWED_EXT=["pdf","doc","docx","ppt","pptx","png","jpg","jpeg","gif","webp"];
@@ -703,9 +687,7 @@
   function syncServer(){
     clearTimeout(syncTimer);
     syncTimer=setTimeout(()=>{
-      window.api.save(stateSnapshot())
-        .then(()=>{ if(!backupOn){ backupOn=true; updateBackupStatus(); } })
-        .catch(()=>{ if(backupOn){ backupOn=false; updateBackupStatus(); } });
+      window.api.save(stateSnapshot()).catch(()=>{});
     }, 450);
   }
   // save() y saveCats() persisten todo el estado (local + respaldo)
@@ -1491,7 +1473,8 @@
     try { new Notification("Mis Tareas", { body:`Tenés ${parts.join(" y ")}.`, tag:"mis-tareas-"+todayStr(), icon:"/icon-192.png" }); } catch(e){}
   }
   const notifBtn=$("#notifBtn");
-  if(notifBtn) notifBtn.onclick = enableNotifications;
+  if(localStorage.getItem("mis_tareas_notif")==="1" && "Notification" in window && Notification.permission==="granted") notifBtn.classList.add("on");
+  notifBtn.onclick = async () => { await enableNotifications(); notifBtn.classList.toggle("on", localStorage.getItem("mis_tareas_notif")==="1"); };
 
   // ----- PWA: service worker (instalable + abre offline) -----
   if("serviceWorker" in navigator){
@@ -1502,47 +1485,6 @@
     return s.replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   }
 
-  // ----- Respaldo: menú, exportar, importar, estado -----
-  const backupBtn=$("#backupBtn"), backupMenu=$("#backupMenu");
-  backupBtn.onclick = e => { e.stopPropagation(); backupMenu.hidden = !backupMenu.hidden; };
-  backupMenu.onclick = e => e.stopPropagation();
-  document.addEventListener("click", () => backupMenu.hidden = true);
-
-  function updateBackupStatus(){
-    const s=$("#backupStatus");
-    s.textContent = backupOn ? "Sincronizado en la nube ✓" : "Sincronizando…";
-    s.classList.toggle("on", backupOn);
-  }
-
-  function exportData(){
-    const blob=new Blob([JSON.stringify(stateSnapshot(),null,2)], {type:"application/json"});
-    const d=new Date(), p=n=>String(n).padStart(2,"0");
-    const a=document.createElement("a");
-    a.href=URL.createObjectURL(blob);
-    a.download=`mis-tareas-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.json`;
-    a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
-  }
-  function importData(file){
-    if(!file) return;
-    const rd=new FileReader();
-    rd.onload=()=>{
-      let d; try{ d=JSON.parse(rd.result); }catch(e){ d=null; }
-      if(!d || !Array.isArray(d.tasks)){ alert("El archivo no es un respaldo válido de Mis Tareas."); return; }
-      if(!confirm("Esto reemplazará tus tareas y categorías actuales por las del respaldo. ¿Continuar?")) return;
-      tasks = d.tasks;
-      cats = Array.isArray(d.cats) ? d.cats : [];
-      sortMode = d.sort || "manual";
-      prioFirst = d.prioFirst===true;
-      dueFirst  = d.dueFirst===true;
-      if(d.theme){ localStorage.setItem(THEMEKEY, d.theme); applyTheme(d.theme); }
-      statusFilter="all"; catFilter="all"; editingCat=null; addingCat=false; refreshSortBtns(); refreshToggles();
-      persistLocal(); syncServer(); render();
-    };
-    rd.readAsText(file);
-  }
-  $("#exportBtn").onclick = () => { exportData(); backupMenu.hidden=true; };
-  $("#importBtn").onclick = () => $("#importFile").click();
-  $("#importFile").onchange = ev => { importData(ev.target.files[0]); ev.target.value=""; backupMenu.hidden=true; };
   $("#attInput").onchange = ev => {
     const files=[...ev.target.files]; ev.target.value="";
     const t=tasks.find(x=>x.id===attTargetTaskId); attTargetTaskId=null;
@@ -1553,7 +1495,6 @@
   async function boot(){
     try{
       const d = await window.api.load();
-      backupOn = true;
       if(d && Array.isArray(d.tasks) && (d.tasks.length || (Array.isArray(d.cats)&&d.cats.length))){
         tasks = d.tasks; cats = d.cats||[]; sortMode = d.sort||sortMode;
         if(typeof d.prioFirst==="boolean") prioFirst=d.prioFirst;
@@ -1565,8 +1506,7 @@
         // archivo vacío: migramos lo que haya en localStorage
         syncServer();
       }
-    }catch(e){ backupOn = false; }
-    updateBackupStatus();
+    }catch(e){}
     render();
     notifyDueOnce();   // aviso del navegador si hay vencimientos (si están activados)
     input.focus();
