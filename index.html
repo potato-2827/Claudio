@@ -211,15 +211,15 @@
   .hovwrap{position:relative;display:inline-flex}
   .hovlist{
     position:absolute;top:calc(100% + 6px);left:0;z-index:25;
-    min-width:170px;max-width:240px;max-height:200px;overflow-y:auto;
+    min-width:170px;max-width:300px;max-height:220px;overflow-y:auto;
     background:var(--menu);border:1px solid var(--row-border);
     border-radius:12px;box-shadow:var(--shadow);padding:7px;
     display:none;flex-direction:column;gap:4px;
   }
   .hovwrap:hover .hovlist{display:flex}
-  .hovrow{display:flex;align-items:center;gap:6px;font-size:.78rem;
-    padding:3px 5px;border-radius:7px;white-space:nowrap;
-    overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+  .hovrow{display:flex;align-items:flex-start;gap:6px;font-size:.78rem;
+    padding:3px 5px;border-radius:7px;white-space:normal;
+    word-break:break-word;overflow-wrap:anywhere;color:var(--text)}
   .hovrow.done{color:var(--done);text-decoration:line-through}
   .hovempty{font-size:.78rem;color:var(--muted);padding:3px 5px}
   [data-theme="dark"] .subbtn.complete{color:#5fe08a}
