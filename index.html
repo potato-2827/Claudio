@@ -60,10 +60,12 @@
     height:100vh;
     background:transparent;
     border:none;border-radius:0;
-    padding:20px 20px 14px;
+    padding:0;
     display:flex;flex-direction:column;
   }
-  header{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px}
+  .sidebar{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px;
+    padding:20px 20px 14px;flex:none}
+  .main-content{display:flex;flex-direction:column;flex:1;min-height:0;padding:0 20px 14px}
   .titles{order:1}
   .titles h1{font-size:1.5rem;font-weight:700;letter-spacing:-.02em}
   .titles .date{color:var(--muted);font-size:.82rem;margin-top:2px;text-transform:capitalize}
@@ -112,6 +114,20 @@
   .mc-grid .hovlist{left:50%;transform:translateX(-50%);top:calc(100% + 4px)}
   .mc-grid .hovlist.mc-right{left:auto;right:-8px;transform:none}
   .mc-grid .hovlist.mc-left{left:-8px;transform:none}
+
+  /* Pantallas anchas: la barra superior pasa a ser una barra lateral fija */
+  @media (min-width:760px){
+    .app{flex-direction:row}
+    .sidebar{
+      flex:0 0 230px;flex-direction:column;flex-wrap:nowrap;align-items:stretch;
+      gap:16px;height:100vh;overflow-y:auto;
+      border-right:1px solid var(--row-border);
+      padding:20px 16px;
+    }
+    .mini-cal{order:2;flex:none;width:100%;max-width:none;margin:0}
+    .head-actions{order:3;margin-top:auto;justify-content:center}
+    .main-content{padding:20px 26px 14px;min-width:0}
+  }
 
   .popover{
     position:absolute;top:62px;right:24px;z-index:30;min-width:218px;
@@ -511,7 +527,7 @@
 </head>
 <body>
   <main class="app">
-    <header>
+    <header class="sidebar">
       <div class="titles">
         <h1>Mis Tareas</h1>
         <div class="date" id="date"></div>
@@ -531,6 +547,7 @@
       </div>
     </header>
 
+    <div class="main-content">
     <input type="file" id="attInput" multiple hidden
       accept=".pdf,.doc,.docx,.ppt,.pptx,image/png,image/jpeg,image/gif,image/webp">
 
@@ -601,6 +618,7 @@
       <span id="count">0 pendientes</span>
       <button class="clear" id="clearDone">Borrar completadas</button>
     </footer>
+    </div>
   </main>
 
   <div class="popover ctxmenu" id="taskCtxMenu" hidden>
