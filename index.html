@@ -518,6 +518,11 @@
               <button class="toggle" id="tDue" title="Las tareas por vencer van arriba">⏰ Vencimiento</button>
             </div>
           </div>
+        </div>
+      </div>
+      <div class="filter-wrap">
+        <button class="filter-btn" id="sortBtn">↕ Ordenar</button>
+        <div class="popover filter-pop" id="sortPop" hidden>
           <div class="fp-section">
             <div class="fp-label">Ordenar</div>
             <select id="sort" class="sortsel" title="Ordenar tareas">
@@ -1220,23 +1225,30 @@
     tasks=tasks.filter(t=>!t.done); save(); render();
   };
 
-  // ----- Botón de Filtros (menú desplegable) -----
+  // ----- Botones de Filtros y Ordenar (menús desplegables, independientes) -----
   const filterBtn=$("#filterBtn"), filterPop=$("#filterPop");
-  filterBtn.onclick = e => { e.stopPropagation(); filterPop.hidden = !filterPop.hidden; };
+  filterBtn.onclick = e => { e.stopPropagation(); sortPop.hidden=true; filterPop.hidden = !filterPop.hidden; };
   filterPop.onclick = e => e.stopPropagation();
-  document.addEventListener("click", () => filterPop.hidden = true);
+  const sortBtn=$("#sortBtn"), sortPop=$("#sortPop");
+  sortBtn.onclick = e => { e.stopPropagation(); filterPop.hidden=true; sortPop.hidden = !sortPop.hidden; };
+  sortPop.onclick = e => e.stopPropagation();
+  document.addEventListener("click", () => { filterPop.hidden = true; sortPop.hidden = true; });
   function updateFilterSummary(){
-    const parts=[];
-    if(statusFilter==="active") parts.push("Pendientes");
-    else if(statusFilter==="done") parts.push("Completadas");
-    if(catFilter!=="all"){ const c=catById(catFilter); if(c) parts.push(c.name); }
-    if(prioFirst) parts.push("⭐");
-    if(dueFirst) parts.push("⏰");
+    const fparts=[];
+    if(statusFilter==="active") fparts.push("Pendientes");
+    else if(statusFilter==="done") fparts.push("Completadas");
+    if(catFilter!=="all"){ const c=catById(catFilter); if(c) fparts.push(c.name); }
+    if(prioFirst) fparts.push("⭐");
+    if(dueFirst) fparts.push("⏰");
+    const filterActive = fparts.length>0;
+    filterBtn.classList.toggle("active", filterActive);
+
     const sn={az:"A→Z", za:"Z→A", cat:"por categoría", pending:"pendientes 1°"};
-    if(sortMode!=="manual" && sn[sortMode]) parts.push("orden "+sn[sortMode]);
-    const active = parts.length>0;
-    $("#filterSummary").textContent = active ? parts.join(" · ") : "Todas";
-    filterBtn.classList.toggle("active", active);
+    const sortActive = sortMode!=="manual";
+    sortBtn.classList.toggle("active", sortActive);
+    if(sortActive && sn[sortMode]) fparts.push("orden "+sn[sortMode]);
+
+    $("#filterSummary").textContent = fparts.length ? fparts.join(" · ") : "Todas";
   }
 
   // ----- Buscador (colapsable) -----
