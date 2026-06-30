@@ -204,9 +204,12 @@
     background:var(--row-border);color:var(--muted);display:none;transition:background .2s;
     align-items:center;gap:4px;
   }
-  li:hover .subbtn,.subbtn.has-sub{display:inline-flex}
+  li:hover .subbtn,.subbtn.has-sub,.subbtn.open{display:inline-flex}
   .subbtn:hover{background:var(--accent-soft);color:var(--accent)}
   .subbtn.complete{color:#16a34a}
+  .subbtn.open{background:var(--accent-soft);color:var(--accent)}
+  .chev{display:inline-block;transition:transform .2s ease}
+  .subbtn.open .chev{transform:rotate(90deg)}
 
   .hovwrap{position:relative;display:inline-flex}
   .hovlist{
@@ -747,10 +750,10 @@
         const atts=t.attachments||[];
         const attOpen=attExpanded.has(t.id);
         const panelOpen=isOpen||attOpen;
-        const subLabel = `${isOpen?"▾":"▸"} Subtareas${subs.length?` ${sdone}/${subs.length}`:""}`;
-        const subClass = (subs.length?"has-sub":"") + (subs.length && sdone===subs.length ? " complete":"");
-        const attLabel = `${attOpen?"▾":"▸"} Archivos${atts.length?` (${atts.length})`:""}`;
-        const attClass = atts.length?"has-sub":"";
+        const subLabel = `<span class="chev">▸</span> Subtareas${subs.length?` ${sdone}/${subs.length}`:""}`;
+        const subClass = (subs.length?"has-sub":"") + (subs.length && sdone===subs.length ? " complete":"") + (isOpen?" open":"");
+        const attLabel = `<span class="chev">▸</span> Archivos${atts.length?` (${atts.length})`:""}`;
+        const attClass = (atts.length?"has-sub":"") + (attOpen?" open":"");
         let html=`<div class="row">
           <span class="grip" draggable="true" title="Arrastra para reordenar">⠿</span>
           <div class="check" role="checkbox" aria-checked="${t.done}" tabindex="0">
