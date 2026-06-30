@@ -91,10 +91,15 @@
   }
   .mc-head button:hover{background:var(--accent-soft);color:var(--accent)}
   #mcLabel{flex:1;text-align:center;font-size:.8rem;font-weight:700;text-transform:capitalize}
-  .mc-toggle{transition:transform .2s !important}
-  .mini-cal.collapsed .mc-toggle{transform:rotate(-90deg)}
   .mini-cal.collapsed .mc-grid{display:none}
   .mc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+  .mc-foot{display:flex;justify-content:flex-end;margin-top:4px}
+  .mc-foot button{
+    border:none;background:transparent;color:var(--accent);cursor:pointer;
+    font:inherit;font-size:.7rem;font-weight:700;padding:3px 7px;border-radius:7px;
+    transition:.15s;
+  }
+  .mc-foot button:hover{background:var(--accent-soft)}
   .mc-dow{text-align:center;font-size:.6rem;font-weight:700;color:var(--muted);padding:2px 0 4px}
   .mc-cell{
     position:relative;aspect-ratio:1;display:flex;flex-direction:column;
@@ -542,9 +547,11 @@
           <button type="button" id="mcPrev" title="Mes anterior">‹</button>
           <span id="mcLabel"></span>
           <button type="button" id="mcNext" title="Mes siguiente">›</button>
-          <button type="button" id="mcToggle" class="mc-toggle" title="Colapsar/expandir calendario">▾</button>
         </div>
         <div class="mc-grid" id="mcGrid"></div>
+        <div class="mc-foot">
+          <button type="button" id="mcToggle">Colapsar</button>
+        </div>
       </div>
       <div class="head-actions">
         <button class="theme-btn" id="notifBtn" title="Avisos de vencimiento">🔔</button>
@@ -1127,10 +1134,16 @@
   }
   $("#mcPrev").onclick = () => { calMonth=new Date(calMonth.getFullYear(), calMonth.getMonth()-1, 1); renderMiniCal(); };
   $("#mcNext").onclick = () => { calMonth=new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 1); renderMiniCal(); };
+  function refreshMcToggle(){
+    const on=$("#miniCal").classList.contains("collapsed");
+    $("#mcToggle").textContent = on ? "Expandir" : "Colapsar";
+  }
   if(localStorage.getItem("mis_tareas_calCollapsed")==="1") $("#miniCal").classList.add("collapsed");
+  refreshMcToggle();
   $("#mcToggle").onclick = () => {
     const on=$("#miniCal").classList.toggle("collapsed");
     localStorage.setItem("mis_tareas_calCollapsed", on?"1":"0");
+    refreshMcToggle();
   };
 
   function sortKeys(){
