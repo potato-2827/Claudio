@@ -106,6 +106,8 @@
     transition:background .15s;
   }
   .popover button:hover{background:var(--accent-soft)}
+  .sort-opt.active{background:var(--accent);color:#fff}
+  .sort-opt.active:hover{background:var(--accent)}
   .pop-status{font-size:.74rem;color:var(--muted);padding:7px 11px 3px;font-weight:700}
   .pop-status.on{color:#15a34a}
   [data-theme="dark"] .pop-status.on{color:#5fe08a}
@@ -322,18 +324,7 @@
   .fp-label{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;
     color:var(--muted);margin-bottom:8px}
   .filter-pop .filters,.filter-pop .cat-bar,.filter-pop .prio-toggles{margin:0}
-  .filter-pop .sortsel{width:100%}
-
-  .sort-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap}
-  .sort-lbl{font-size:.76rem;color:var(--muted);font-weight:600}
-  .sortsel{
-    border:1px solid var(--row-border);background:var(--input-bg);color:var(--text);
-    font:inherit;font-size:.78rem;font-weight:600;border-radius:8px;
-    padding:4px 8px;cursor:pointer;outline:none;transition:.2s;
-  }
-  .sortsel:hover{border-color:var(--accent)}
-  .sortsel:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-  .sortsel option,.catsel option{background:var(--menu);color:var(--text);font-weight:600}
+  .catsel option{background:var(--menu);color:var(--text);font-weight:600}
   .grip.locked{opacity:.25!important;cursor:not-allowed}
 
   /* Barra de categorias */
@@ -523,17 +514,12 @@
       <div class="filter-wrap">
         <button class="filter-btn" id="sortBtn">↕ Ordenar</button>
         <div class="popover filter-pop" id="sortPop" hidden>
-          <div class="fp-section">
-            <div class="fp-label">Ordenar</div>
-            <select id="sort" class="sortsel" title="Ordenar tareas">
-              <option value="manual">↕ Manual</option>
-              <option value="az">A → Z</option>
-              <option value="za">Z → A</option>
-              <option value="cat">Por categoría</option>
-              <option value="pending">Pendientes primero</option>
-              <option value="due">Fecha más próxima</option>
-            </select>
-          </div>
+          <button class="sort-opt" data-sort="manual">↕ Manual</button>
+          <button class="sort-opt" data-sort="az">A → Z</button>
+          <button class="sort-opt" data-sort="za">Z → A</button>
+          <button class="sort-opt" data-sort="cat">Por categoría</button>
+          <button class="sort-opt" data-sort="pending">Pendientes primero</button>
+          <button class="sort-opt" data-sort="due">Fecha más próxima</button>
         </div>
       </div>
       <span class="filter-summary" id="filterSummary">Todas</span>
@@ -1207,14 +1193,19 @@
     };
   });
 
-  const sortSel=$("#sort");
-  sortSel.value = sortMode;
-  sortSel.onchange = () => {
-    sortMode = sortSel.value;
-    localStorage.setItem(SORTKEY, sortMode);
-    syncServer();
-    render();
-  };
+  function refreshSortBtns(){
+    document.querySelectorAll(".sort-opt").forEach(b=> b.classList.toggle("active", b.dataset.sort===sortMode));
+  }
+  refreshSortBtns();
+  document.querySelectorAll(".sort-opt").forEach(b=>{
+    b.onclick = () => {
+      sortMode = b.dataset.sort;
+      localStorage.setItem(SORTKEY, sortMode);
+      syncServer();
+      refreshSortBtns();
+      render();
+    };
+  });
 
   const tPrio=$("#tPrio"), tDue=$("#tDue");
   function refreshToggles(){ tPrio.classList.toggle("on",prioFirst); tDue.classList.toggle("on",dueFirst); }
@@ -1585,7 +1576,7 @@
       prioFirst = d.prioFirst===true;
       dueFirst  = d.dueFirst===true;
       if(d.theme){ localStorage.setItem(THEMEKEY, d.theme); applyTheme(d.theme); }
-      statusFilter="all"; catFilter="all"; sortSel.value=sortMode; refreshToggles();
+      statusFilter="all"; catFilter="all"; refreshSortBtns(); refreshToggles();
       persistLocal(); syncServer(); render();
     };
     rd.readAsText(file);
@@ -1609,7 +1600,7 @@
         if(typeof d.prioFirst==="boolean") prioFirst=d.prioFirst;
         if(typeof d.dueFirst==="boolean")  dueFirst=d.dueFirst;
         if(d.theme){ localStorage.setItem(THEMEKEY, d.theme); applyTheme(d.theme); }
-        sortSel.value = sortMode; refreshToggles();
+        refreshSortBtns(); refreshToggles();
         persistLocal();
       } else {
         // archivo vacío: migramos lo que haya en localStorage
