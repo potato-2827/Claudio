@@ -211,7 +211,7 @@
   .hovwrap{position:relative;display:inline-flex}
   .hovlist{
     position:absolute;top:calc(100% + 6px);left:0;z-index:25;
-    min-width:170px;max-width:300px;max-height:220px;overflow-y:auto;
+    width:max-content;min-width:170px;max-width:min(90vw,460px);max-height:220px;overflow-y:auto;
     background:var(--menu);border:1px solid var(--row-border);
     border-radius:12px;box-shadow:var(--shadow);padding:7px;
     display:none;flex-direction:column;gap:4px;
