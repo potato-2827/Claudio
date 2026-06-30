@@ -207,6 +207,21 @@
   li:hover .subbtn,.subbtn.has-sub{display:inline-flex}
   .subbtn:hover{background:var(--accent-soft);color:var(--accent)}
   .subbtn.complete{color:#16a34a}
+
+  .hovwrap{position:relative;display:inline-flex}
+  .hovlist{
+    position:absolute;bottom:calc(100% + 6px);left:0;z-index:25;
+    min-width:170px;max-width:240px;max-height:200px;overflow-y:auto;
+    background:var(--menu);border:1px solid var(--row-border);
+    border-radius:12px;box-shadow:var(--shadow);padding:7px;
+    display:none;flex-direction:column;gap:4px;
+  }
+  .hovwrap:hover .hovlist{display:flex}
+  .hovrow{display:flex;align-items:center;gap:6px;font-size:.78rem;
+    padding:3px 5px;border-radius:7px;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+  .hovrow.done{color:var(--done);text-decoration:line-through}
+  .hovempty{font-size:.78rem;color:var(--muted);padding:3px 5px}
   [data-theme="dark"] .subbtn.complete{color:#5fe08a}
   .subpanel{
     display:flex;flex-direction:column;gap:5px;
@@ -747,8 +762,18 @@
               <select class="catsel" title="Categoría">${catOptions(t.cat)}</select>
               <button class="due-btn ${di.cls}${t.due?" has-due":""}" title="${t.due?"Cambiar fecha (clic) · quitar (clic derecho)":"Poner fecha de vencimiento"}">${di.label}</button>
               <input type="date" class="due-input" value="${t.due||""}">
-              <button class="subbtn ${subClass}" title="${subs.length?"Ver/ocultar subtareas":"Agregar subtareas"}">${subLabel}</button>
-              <button class="subbtn attbtn ${attClass}" title="Ver/agregar archivos adjuntos">${attLabel}</button>
+              <span class="hovwrap">
+                <button class="subbtn ${subClass}" title="${subs.length?"Ver/ocultar subtareas":"Agregar subtareas"}">${subLabel}</button>
+                <div class="hovlist">${subs.length
+                  ? subs.map(s=>`<div class="hovrow ${s.done?"done":""}">${escapeHtml(s.text)}</div>`).join("")
+                  : `<div class="hovempty">Sin subtareas</div>`}</div>
+              </span>
+              <span class="hovwrap">
+                <button class="subbtn attbtn ${attClass}" title="Ver/agregar archivos adjuntos">${attLabel}</button>
+                <div class="hovlist">${atts.length
+                  ? atts.map(a=>`<div class="hovrow">${iconForName(a.name)} ${escapeHtml(a.name)}</div>`).join("")
+                  : `<div class="hovempty">Sin archivos</div>`}</div>
+              </span>
             </div>
           </div>
           <button class="star ${t.important?"on":""}" title="Marcar como importante">${t.important?"★":"☆"}</button>
