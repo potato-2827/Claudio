@@ -263,11 +263,11 @@
   .subedit{flex:1;font:inherit;font-size:.86rem;color:var(--text);
     background:var(--input-bg);border:1px solid var(--accent);border-radius:8px;
     padding:4px 8px;outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
-  .subdel{border:none;background:transparent;cursor:pointer;color:var(--muted);
-    opacity:0;width:24px;height:24px;border-radius:7px;flex:none;font-size:.85rem;
+  .subdel,.subeditbtn{border:none;background:transparent;cursor:pointer;color:var(--muted);
+    width:24px;height:24px;border-radius:7px;flex:none;font-size:.85rem;
     display:grid;place-items:center;transition:.2s}
-  .subitem:hover .subdel{opacity:1}
   .subdel:hover{background:rgba(239,68,68,.12);color:var(--danger)}
+  .subeditbtn:hover{background:var(--accent-soft);color:var(--accent)}
   .subadd-row{display:flex;align-items:center;gap:9px;padding-left:1px}
   .subadd{
     flex:1;font:inherit;font-size:.84rem;color:var(--text);
@@ -307,9 +307,8 @@
   }
   .notesarea:focus,.subnotes:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
   .subnotesbtn{border:none;background:transparent;cursor:pointer;color:var(--muted);
-    opacity:0;width:24px;height:24px;border-radius:7px;flex:none;font-size:.8rem;
+    width:24px;height:24px;border-radius:7px;flex:none;font-size:.8rem;
     display:grid;place-items:center;transition:.2s}
-  .subitem:hover .subnotesbtn,.subnotesbtn.has-notes,.subnotesbtn.open{opacity:1}
   .subnotesbtn:hover{background:var(--accent-soft)}
   .subnotesbtn.open{background:var(--accent-soft)}
   .subnotes-row{padding:2px 0 2px 27px}
@@ -391,8 +390,7 @@
   .due-btn.today{background:var(--accent-soft);color:var(--accent)}
   .due-btn.upcoming{background:var(--accent-soft);color:var(--accent);opacity:1}
   .due-btn.due-done{opacity:.55;text-decoration:line-through}
-  .subdue-btn{font-size:.66rem;padding:2px 7px}
-  .subitem:hover .subdue-btn{display:inline-block}
+  .subdue-btn{font-size:.66rem;padding:2px 7px;display:inline-block}
   .subdue-btn.inherited{font-style:italic}
 
   /* Prioridad / importante */
@@ -846,6 +844,7 @@
                 <button class="due-btn subdue-btn ${sdi.cls}${sEffDue?" has-due":""}${sInherited?" inherited":""}" title="${sDueTitle}">${sdi.label}</button>
                 <input type="date" class="subdue-input" data-sid="${s.id}" value="${s.due||""}"${t.due?` max="${t.due}"`:""}>
                 <button class="subnotesbtn ${s.notes?"has-notes":""}${sNotesOpen?" open":""}" title="Ver/agregar notas de la subtarea">📝</button>
+                <button class="subeditbtn" title="Editar subtarea">✎</button>
                 <button class="subdel" title="Eliminar subtarea">✕</button>
               </div>`;
               if(sNotesOpen){
@@ -948,6 +947,7 @@
             siEl.querySelector(".subtxt").onclick = () => toggleSub(t, sid);
             siEl.querySelector(".subtxt").ondblclick = () => editSub(t, sid, siEl);
             siEl.querySelector(".subdel").onclick = () => removeSub(t, sid);
+            siEl.querySelector(".subeditbtn").onclick = () => editSub(t, sid, siEl);
             siEl.querySelector(".subnotesbtn").onclick = () => {
               if(subNotesExpanded.has(sid)) subNotesExpanded.delete(sid); else subNotesExpanded.add(sid);
               render();
