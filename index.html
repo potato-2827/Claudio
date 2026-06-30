@@ -181,7 +181,8 @@
   li.done .check{background:var(--accent)}
   li.done .check svg{stroke-dashoffset:0}
   .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-  .txt{min-width:0;max-width:100%;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:.25s;cursor:pointer}
+  .title-row{display:flex;align-items:center;gap:2px;min-width:0}
+  .txt{flex:1;min-width:0;max-width:100%;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:.25s;cursor:pointer}
   .meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:20px}
   li.done .txt{color:var(--done);text-decoration:line-through}
   .edit-input{
@@ -378,7 +379,7 @@
   /* Prioridad / importante */
   .star{
     flex:none;border:none;background:transparent;cursor:pointer;
-    width:30px;height:30px;border-radius:9px;font-size:1.05rem;line-height:1;
+    width:22px;height:22px;border-radius:7px;font-size:.95rem;line-height:1;
     display:none;place-items:center;color:var(--muted);transition:.2s;
   }
   li:hover .star{display:grid}
@@ -763,7 +764,10 @@
             <svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>
           </div>
           <div class="body">
-            <span class="txt">${escapeHtml(t.text)}</span>
+            <div class="title-row">
+              <button class="star ${t.important?"on":""}" title="Marcar como importante">${t.important?"★":"☆"}</button>
+              <span class="txt">${escapeHtml(t.text)}</span>
+            </div>
             <div class="meta">
               <select class="catsel" title="Categoría">${catOptions(t.cat)}</select>
               <button class="due-btn ${di.cls}${t.due?" has-due":""}" title="${t.due?"Cambiar fecha (clic) · quitar (clic derecho)":"Poner fecha de vencimiento"}">${di.label}</button>
@@ -782,7 +786,6 @@
               </span>
             </div>
           </div>
-          <button class="star ${t.important?"on":""}" title="Marcar como importante">${t.important?"★":"☆"}</button>
           <button class="edit" title="Editar">✎</button>
           <button class="del" title="Eliminar">✕</button>
         </div>`;
