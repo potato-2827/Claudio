@@ -531,6 +531,7 @@
               <option value="za">Z → A</option>
               <option value="cat">Por categoría</option>
               <option value="pending">Pendientes primero</option>
+              <option value="due">Fecha más próxima</option>
             </select>
           </div>
         </div>
@@ -920,6 +921,7 @@
     else if(sortMode==="za") ks.push((a,b)=> b.text.localeCompare(a.text,"es",{sensitivity:"base",numeric:true}));
     else if(sortMode==="cat"){ const rank=id=>{const i=cats.findIndex(c=>c.id===id);return i<0?cats.length:i;}; ks.push((a,b)=> rank(a.cat)-rank(b.cat)); }
     else if(sortMode==="pending") ks.push((a,b)=> (a.done?1:0) - (b.done?1:0));
+    else if(sortMode==="due") ks.push((a,b)=> dueVal(a) - dueVal(b));
     return ks;
   }
 
@@ -1243,7 +1245,7 @@
     const filterActive = fparts.length>0;
     filterBtn.classList.toggle("active", filterActive);
 
-    const sn={az:"A→Z", za:"Z→A", cat:"por categoría", pending:"pendientes 1°"};
+    const sn={az:"A→Z", za:"Z→A", cat:"por categoría", pending:"pendientes 1°", due:"por fecha"};
     const sortActive = sortMode!=="manual";
     sortBtn.classList.toggle("active", sortActive);
     if(sortActive && sn[sortMode]) fparts.push("orden "+sn[sortMode]);
