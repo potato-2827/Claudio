@@ -899,11 +899,16 @@
         dueBtn.onclick = () => { try{ dueInput.showPicker(); }catch(e){ dueInput.focus(); dueInput.click(); } };
         dueBtn.oncontextmenu = e => { e.preventDefault(); e.stopPropagation(); if(t.due){ t.due=null; save(); render(); } };
         dueInput.onchange = () => {
-          t.due = dueInput.value || null;
-          if(t.due){   // recortar subtareas que ya tenian fecha propia posterior a la nueva
-            for(const s of t.subtasks||[]) if(s.due && s.due>t.due) s.due=t.due;
+          const v = dueInput.value || null;
+          if(v){
+            const conflicto = (t.subtasks||[]).find(s=>s.due && s.due>v);
+            if(conflicto){
+              alert(`No se puede poner esa fecha: la subtarea "${conflicto.text}" vence despues, el ${formatDMY(conflicto.due)}. Cambiá o quitá esa fecha primero.`);
+              dueInput.value = t.due||"";
+              return;
+            }
           }
-          save(); render();
+          t.due = v; save(); render();
         };
         const star=li.querySelector(".star");
         star.onclick = () => { t.important = !t.important; save(); render(); };
@@ -957,9 +962,13 @@
             };
             sDueInput.onchange = () => {
               const s=(t.subtasks||[]).find(x=>x.id===sid); if(!s) return;
-              let v=sDueInput.value;
-              if(t.due && v && v>t.due) v=t.due;   // no puede vencer despues que la tarea
-              s.due=v||null; save(); render();
+              const v = sDueInput.value || null;
+              if(v && t.due && v>t.due){
+                alert(`La subtarea no puede vencer despues que la tarea (vence el ${formatDMY(t.due)}).`);
+                sDueInput.value = s.due||"";
+                return;
+              }
+              s.due=v; save(); render();
             };
           });
           li.querySelectorAll(".subnotes").forEach(taEl=>{
@@ -992,12 +1001,15 @@
     return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
   }
   function dueVal(t){ return t.due ? Date.parse(t.due) : Infinity; }
+  function formatDMY(iso){
+    const [y,m,d]=iso.split("-");
+    return `${d}/${m}/${y.slice(2)}`;
+  }
   function dueInfo(t){
     if(!t.due) return {cls:"", label:"📅"};
     const today=todayStr();
     const cls = t.done ? "due-done" : (t.due<today ? "overdue" : (t.due===today ? "today" : "upcoming"));
-    const [y,m,d]=t.due.split("-");
-    const label = t.due===today ? "Hoy" : `${d}/${m}`;
+    const label = t.due===today ? "Hoy" : formatDMY(t.due);
     return {cls, label};
   }
   function sortKeys(){
