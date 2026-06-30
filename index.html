@@ -140,6 +140,22 @@
   li.removing{animation:out .25s forwards}
   @keyframes out{to{opacity:0;transform:translateX(40px);height:0;margin:0;padding-top:0;padding-bottom:0}}
   li.dragging{opacity:.45}
+
+  .undo-toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+    background:var(--menu);color:var(--text);border:1px solid var(--row-border);
+    border-radius:12px;box-shadow:var(--shadow);
+    padding:10px 10px 10px 16px;display:flex;align-items:center;gap:14px;
+    font-size:.88rem;font-weight:600;z-index:60;max-width:90vw;
+    animation:pop .2s ease;
+  }
+  .undo-toast[hidden]{display:none}
+  .undo-toast span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .undo-toast button{
+    border:none;background:var(--accent);color:#fff;font:inherit;font-weight:700;
+    padding:7px 14px;border-radius:8px;cursor:pointer;transition:.2s;flex:none;
+  }
+  .undo-toast button:hover{filter:brightness(1.1)}
   li.drop-before{box-shadow:inset 0 3px 0 -1px var(--accent)}
   li.drop-after{box-shadow:inset 0 -3px 0 -1px var(--accent)}
   .grip{
@@ -545,6 +561,11 @@
     <button id="ctxAddSub">+ Agregar subtarea</button>
     <button id="ctxAddAtt">+ Agregar archivo</button>
     <button id="ctxAddNotes">+ Agregar notas</button>
+  </div>
+
+  <div class="undo-toast" id="undoToast" hidden>
+    <span id="undoMsg">Tarea eliminada</span>
+    <button id="undoBtn">Deshacer</button>
   </div>
 
   <div class="login-overlay" id="loginOverlay">
@@ -1161,8 +1182,34 @@
   }
   function remove(id, li){
     li.classList.add("removing");
-    setTimeout(()=>{ tasks=tasks.filter(x=>x.id!==id); save(); render(); }, 230);
+    setTimeout(()=>{
+      const idx=tasks.findIndex(x=>x.id===id); if(idx<0) return;
+      const [task]=tasks.splice(idx,1);
+      save(); render();
+      showUndo(task, idx);
+    }, 230);
   }
+
+  // ----- Deshacer eliminar -----
+  let pendingUndo=null;   // {task, index, timer}
+  const undoToast=$("#undoToast"), undoMsg=$("#undoMsg"), undoBtn=$("#undoBtn");
+  function showUndo(task, index){
+    if(pendingUndo) clearTimeout(pendingUndo.timer);
+    const label=task.text.length>34 ? task.text.slice(0,34)+"…" : task.text;
+    undoMsg.textContent=`"${label}" eliminada`;
+    undoToast.hidden=false;
+    const timer=setTimeout(()=>{ pendingUndo=null; undoToast.hidden=true; }, 6000);
+    pendingUndo={task, index, timer};
+  }
+  undoBtn.onclick = () => {
+    if(!pendingUndo) return;
+    clearTimeout(pendingUndo.timer);
+    const {task, index}=pendingUndo;
+    tasks.splice(Math.min(index, tasks.length), 0, task);
+    pendingUndo=null; undoToast.hidden=true;
+    save(); render();
+  };
+
   let dragId=null;
   function clearDropMarks(){
     list.querySelectorAll("li").forEach(x=>x.classList.remove("drop-before","drop-after"));
