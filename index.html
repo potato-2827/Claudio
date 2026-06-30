@@ -173,9 +173,9 @@
   .grip:active{cursor:grabbing}
   .check{
     width:24px;height:24px;flex:none;border-radius:50%;cursor:pointer;
-    border:2.2px solid var(--accent);position:relative;transition:.2s;
+    border:2.2px solid var(--accent);background:var(--accent-soft);position:relative;transition:.2s;
   }
-  .check:hover{box-shadow:0 0 0 4px var(--accent-soft)}
+  .check:hover{box-shadow:0 0 0 4px var(--accent-soft);transform:scale(1.08)}
   .check svg{position:absolute;inset:0;margin:auto;width:13px;height:13px;
     stroke:#fff;stroke-width:3.5;fill:none;stroke-linecap:round;stroke-linejoin:round;
     stroke-dasharray:20;stroke-dashoffset:20;transition:stroke-dashoffset .3s .05s}
@@ -785,7 +785,7 @@
         const notesClass = (t.notes?"has-sub":"") + (notesOpen?" open":"");
         let html=`<div class="row">
           <span class="grip" draggable="true" title="Arrastra para reordenar">⠿</span>
-          <div class="check" role="checkbox" aria-checked="${t.done}" tabindex="0">
+          <div class="check" role="checkbox" aria-checked="${t.done}" tabindex="0" title="${t.done?"Marcar como pendiente":"Marcar como completada"}">
             <svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>
           </div>
           <div class="body">
