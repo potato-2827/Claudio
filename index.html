@@ -76,7 +76,8 @@
   }
   .theme-btn:hover{transform:scale(1.08) rotate(-8deg)}
   .theme-btn.on{background:var(--accent);color:#fff}
-  .head-actions{display:flex;gap:8px;flex:none;order:2}
+  .head-actions{display:flex;gap:8px;flex:none;order:4}
+  .sb-controls{order:2;flex:1 1 100%}
 
   .mini-cal{
     order:3;flex:1 1 300px;max-width:300px;margin:6px auto 0;
@@ -165,11 +166,11 @@
   .add:hover{filter:brightness(1.08)}
   .add:active{transform:scale(.92)}
 
-  .filters{display:flex;gap:6px;margin-bottom:8px}
+  .filters{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
   .filters button{
     border:none;cursor:pointer;background:transparent;color:var(--muted);
-    padding:6px 13px;border-radius:99px;font-size:.82rem;font-weight:600;
-    transition:.2s;
+    padding:6px 10px;border-radius:8px;font-size:.82rem;font-weight:600;
+    text-align:left;width:100%;transition:.2s;
   }
   .filters button.active{background:var(--accent);color:#fff}
   .filters button:not(.active):hover{background:var(--accent-soft);color:var(--accent)}
@@ -366,16 +367,13 @@
     font-size:.8rem;font-weight:600;padding:5px 9px;border-radius:8px;transition:.2s}
   .clear:hover{color:var(--danger);background:rgba(239,68,68,.1)}
 
-  /* Barra y menú de filtros */
-  .filterbar{display:flex;align-items:center;gap:10px;margin-bottom:8px;min-width:0}
-  .filter-wrap{position:relative;flex:none}
-  .filter-btn{display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  /* Menú de Ordenar */
+  .filter-wrap{position:relative;flex:none;margin-top:6px}
+  .filter-btn{display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;
     border:1px solid var(--row-border);background:var(--input-bg);color:var(--text);
-    font:inherit;font-size:.85rem;font-weight:700;padding:7px 14px;border-radius:99px;transition:.2s}
+    width:100%;font:inherit;font-size:.85rem;font-weight:700;padding:7px 14px;border-radius:99px;transition:.2s}
   .filter-btn:hover{border-color:var(--accent)}
   .filter-btn.active{background:var(--accent);color:#fff;border-color:transparent}
-  .filter-summary{font-size:.82rem;color:var(--muted);font-weight:600;min-width:0;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .filter-pop{top:calc(100% + 8px);left:0;right:auto;min-width:250px;max-width:330px;
     max-height:70vh;overflow:auto;display:flex;flex-direction:column;gap:0}
   .fp-section{padding:9px 4px;border-bottom:1px solid var(--row-border)}
@@ -383,20 +381,22 @@
   .fp-label{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;
     color:var(--muted);margin-bottom:8px}
   .filter-pop .filters,.filter-pop .cat-bar,.filter-pop .prio-toggles{margin:0}
+  #sortPop{position:fixed}
   .catsel option{background:var(--menu);color:var(--text);font-weight:600}
   .grip.locked{opacity:.25!important;cursor:not-allowed}
 
   /* Barra de categorias */
-  .cat-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:-2px 0 8px}
-  .cat-bar .clbl{font-size:1rem;margin-right:1px;opacity:.6}
+  .cat-bar{display:flex;flex-direction:column;gap:3px;align-items:stretch;margin:-2px 0 8px}
+  .cat-bar .clbl{display:none}
   .chip{
-    border:1px solid var(--row-border);cursor:pointer;background:transparent;
-    color:var(--muted);padding:5px 11px;border-radius:99px;font-size:.8rem;font-weight:600;
-    display:inline-flex;align-items:center;gap:6px;transition:.2s;
+    border:none;cursor:pointer;background:transparent;
+    color:var(--muted);padding:6px 10px;border-radius:8px;font-size:.82rem;font-weight:600;
+    display:flex;align-items:center;gap:8px;width:100%;text-align:left;transition:.2s;
   }
+  .chip:not(.active):hover{background:var(--accent-soft);color:var(--accent)}
   .chip .dot{width:8px;height:8px;border-radius:50%;flex:none}
-  .chip.active{color:#fff;border-color:transparent}
-  .chip:not(.active):hover{background:var(--accent-soft)}
+  .chip .chip-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .chip.active{color:#fff}
   .chip .x{margin-left:1px;font-size:.95rem;line-height:1;opacity:.8}
   .chip .x:hover{opacity:1;transform:scale(1.2)}
   .chip .chip-edit{margin-left:1px;font-size:.85rem;line-height:1;opacity:.8}
@@ -411,14 +411,14 @@
   .catedit-swatch.active{border-color:var(--text)}
   .chip-add{
     border:1px dashed var(--row-border);cursor:pointer;background:transparent;
-    color:var(--accent);padding:5px 11px;border-radius:99px;font-size:.8rem;font-weight:600;
-    transition:.2s;
+    color:var(--accent);padding:5px 10px;border-radius:8px;font-size:.8rem;font-weight:600;
+    width:100%;text-align:left;transition:.2s;
   }
   .chip-add:hover{background:var(--accent-soft);border-style:solid}
   .newcat{
     border:1px solid var(--accent);background:var(--input-bg);color:var(--text);
-    border-radius:99px;padding:5px 11px;font:inherit;font-size:.8rem;font-weight:600;
-    outline:none;width:120px;box-shadow:0 0 0 3px var(--accent-soft);
+    border-radius:8px;padding:5px 11px;font:inherit;font-size:.8rem;font-weight:600;
+    outline:none;width:100%;box-shadow:0 0 0 3px var(--accent-soft);
   }
   /* selector de categoria por tarea */
   .catsel{
@@ -463,13 +463,14 @@
   .due-input,.subdue-input{width:0;height:0;opacity:0;border:0;padding:0;margin:0;overflow:hidden}
 
   /* Interruptores que sobreescriben el orden */
-  .prio-toggles{display:flex;gap:6px;flex-wrap:wrap}
+  .prio-toggles{display:flex;flex-direction:column;gap:3px}
   .toggle{
-    border:1px solid var(--row-border);background:transparent;color:var(--muted);
-    cursor:pointer;border-radius:99px;padding:5px 10px;font-size:.74rem;font-weight:700;transition:.2s;
+    border:none;background:transparent;color:var(--muted);
+    cursor:pointer;border-radius:8px;padding:6px 10px;font-size:.78rem;font-weight:700;
+    width:100%;text-align:left;transition:.2s;
   }
   .toggle:hover{background:var(--accent-soft)}
-  .toggle.on{background:var(--accent);color:#fff;border-color:transparent}
+  .toggle.on{background:var(--accent);color:#fff}
   .sort-right{display:flex;align-items:center;gap:8px;flex:none}
 
   /* Buscador */
@@ -523,13 +524,14 @@
   @media (min-width:760px){
     .app{flex-direction:row;height:100vh}
     .sidebar{
-      flex:0 0 230px;flex-direction:column;flex-wrap:nowrap;align-items:stretch;
-      gap:16px;height:100vh;overflow-y:auto;
+      flex:0 0 270px;flex-direction:column;flex-wrap:nowrap;align-items:stretch;
+      gap:14px;height:100vh;overflow-y:auto;
       border-right:1px solid var(--row-border);
       padding:20px 16px;
     }
-    .mini-cal{order:2;flex:none;width:100%;max-width:none;margin:0}
-    .head-actions{order:3;margin-top:auto;justify-content:center}
+    .sb-controls{flex:none}
+    .mini-cal{flex:none;width:100%;max-width:none;margin:0}
+    .head-actions{margin-top:auto;justify-content:center}
     .main-content{padding:20px 26px 14px;min-width:0;flex:1;min-height:0}
     ul{flex:1;overflow-y:auto}
   }
@@ -542,6 +544,48 @@
         <h1>Mis Tareas</h1>
         <div class="date" id="date"></div>
       </div>
+      <div class="sb-controls">
+        <div class="search-row">
+          <span class="search-ico">🔎</span>
+          <input type="text" id="searchInput" class="search-input" placeholder="Buscar tareas…" autocomplete="off">
+          <button id="searchClear" class="search-clear" title="Limpiar búsqueda" hidden>✕</button>
+        </div>
+
+        <div class="fp-section">
+          <div class="fp-label">Mostrar</div>
+          <div class="filters">
+            <button data-filter="all" class="active">Todas</button>
+            <button data-filter="active">Pendientes</button>
+            <button data-filter="done">Completadas</button>
+          </div>
+        </div>
+
+        <div class="fp-section">
+          <div class="fp-label">Categoría</div>
+          <div class="cat-bar" id="catBar"></div>
+        </div>
+
+        <div class="fp-section">
+          <div class="fp-label">Subir al tope (sobre el orden)</div>
+          <div class="prio-toggles">
+            <button class="toggle" id="tPrio" title="Las tareas importantes van arriba">⭐ Importantes</button>
+            <button class="toggle" id="tDue" title="Las tareas por vencer van arriba">⏰ Vencimiento</button>
+          </div>
+        </div>
+
+        <div class="filter-wrap">
+          <button class="filter-btn" id="sortBtn">↕ Ordenar</button>
+          <div class="popover filter-pop" id="sortPop" hidden>
+            <button class="sort-opt" data-sort="manual">↕ Manual</button>
+            <button class="sort-opt" data-sort="az">A → Z</button>
+            <button class="sort-opt" data-sort="za">Z → A</button>
+            <button class="sort-opt" data-sort="cat">Por categoría</button>
+            <button class="sort-opt" data-sort="pending">Pendientes primero</button>
+            <button class="sort-opt" data-sort="due">Fecha más próxima</button>
+          </div>
+        </div>
+      </div>
+
       <div class="mini-cal" id="miniCal">
         <div class="mc-head">
           <button type="button" id="mcPrev" title="Mes anterior">‹</button>
@@ -576,52 +620,6 @@
       <input type="text" id="input" placeholder="¿Qué necesitas hacer?" autocomplete="off" maxlength="200">
       <button class="add" type="submit" title="Agregar">+</button>
     </form>
-
-    <div class="filterbar">
-      <button class="theme-btn" id="searchToggle" title="Buscar tareas">🔎</button>
-      <div class="filter-wrap">
-        <button class="filter-btn" id="filterBtn">⚙️ Filtros</button>
-        <div class="popover filter-pop" id="filterPop" hidden>
-          <div class="fp-section">
-            <div class="fp-label">Mostrar</div>
-            <div class="filters">
-              <button data-filter="all" class="active">Todas</button>
-              <button data-filter="active">Pendientes</button>
-              <button data-filter="done">Completadas</button>
-            </div>
-          </div>
-          <div class="fp-section">
-            <div class="fp-label">Categoría</div>
-            <div class="cat-bar" id="catBar"></div>
-          </div>
-          <div class="fp-section">
-            <div class="fp-label">Subir al tope (sobre el orden)</div>
-            <div class="prio-toggles">
-              <button class="toggle" id="tPrio" title="Las tareas importantes van arriba">⭐ Importantes</button>
-              <button class="toggle" id="tDue" title="Las tareas por vencer van arriba">⏰ Vencimiento</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="filter-wrap">
-        <button class="filter-btn" id="sortBtn">↕ Ordenar</button>
-        <div class="popover filter-pop" id="sortPop" hidden>
-          <button class="sort-opt" data-sort="manual">↕ Manual</button>
-          <button class="sort-opt" data-sort="az">A → Z</button>
-          <button class="sort-opt" data-sort="za">Z → A</button>
-          <button class="sort-opt" data-sort="cat">Por categoría</button>
-          <button class="sort-opt" data-sort="pending">Pendientes primero</button>
-          <button class="sort-opt" data-sort="due">Fecha más próxima</button>
-        </div>
-      </div>
-      <span class="filter-summary" id="filterSummary">Todas</span>
-    </div>
-
-    <div class="search-row" id="searchRow" hidden>
-      <span class="search-ico">🔎</span>
-      <input type="text" id="searchInput" class="search-input" placeholder="Buscar tareas…" autocomplete="off">
-      <button id="searchClear" class="search-clear" title="Limpiar búsqueda" hidden>✕</button>
-    </div>
 
     <div class="reminder-banner" id="reminderBanner" hidden></div>
 
@@ -1216,7 +1214,7 @@
     if(active) b.style.background = color;
     let html = "";
     if(cat) html += `<span class="dot" style="background:${active?'#fff':cat.color}"></span>`;
-    html += `<span>${escapeHtml(name)}</span>`;
+    html += `<span class="chip-name">${escapeHtml(name)}</span>`;
     if(cat && active) html += `<span class="chip-edit" title="Editar categoría">✎</span><span class="x" title="Eliminar categoría">✕</span>`;
     b.innerHTML = html;
     b.onclick = e => {
@@ -1532,30 +1530,27 @@
     tasks=tasks.filter(t=>!t.done); save(); render();
   };
 
-  // ----- Botones de Filtros y Ordenar (menús desplegables, independientes) -----
-  const filterBtn=$("#filterBtn"), filterPop=$("#filterPop");
-  filterBtn.onclick = e => { e.stopPropagation(); sortPop.hidden=true; filterPop.hidden = !filterPop.hidden; };
-  filterPop.onclick = e => e.stopPropagation();
+  // ----- Botón de Ordenar (menú desplegable, posición fija para no recortarse
+  // si vive dentro de la barra lateral con scroll propio) -----
   const sortBtn=$("#sortBtn"), sortPop=$("#sortPop");
-  sortBtn.onclick = e => { e.stopPropagation(); filterPop.hidden=true; sortPop.hidden = !sortPop.hidden; };
+  sortBtn.onclick = e => {
+    e.stopPropagation();
+    const show = sortPop.hidden;
+    if(show){
+      const r=sortBtn.getBoundingClientRect();
+      const mw=sortPop.offsetWidth||260, mh=sortPop.offsetHeight||260;
+      let x=r.left, y=r.bottom+6;
+      if(x+mw > window.innerWidth)  x = window.innerWidth  - mw - 8;
+      if(y+mh > window.innerHeight) y = window.innerHeight - mh - 8;
+      sortPop.style.left = Math.max(8,x)+"px";
+      sortPop.style.top  = Math.max(8,y)+"px";
+    }
+    sortPop.hidden = !show;
+  };
   sortPop.onclick = e => e.stopPropagation();
-  document.addEventListener("click", () => { filterPop.hidden = true; sortPop.hidden = true; });
+  document.addEventListener("click", () => { sortPop.hidden = true; });
   function updateFilterSummary(){
-    const fparts=[];
-    if(statusFilter==="active") fparts.push("Pendientes");
-    else if(statusFilter==="done") fparts.push("Completadas");
-    if(catFilter!=="all"){ const c=catById(catFilter); if(c) fparts.push(c.name); }
-    if(prioFirst) fparts.push("⭐");
-    if(dueFirst) fparts.push("⏰");
-    const filterActive = fparts.length>0;
-    filterBtn.classList.toggle("active", filterActive);
-
-    const sn={az:"A→Z", za:"Z→A", cat:"por categoría", pending:"pendientes 1°", due:"por fecha"};
-    const sortActive = sortMode!=="manual";
-    sortBtn.classList.toggle("active", sortActive);
-    if(sortActive && sn[sortMode]) fparts.push("orden "+sn[sortMode]);
-
-    $("#filterSummary").textContent = fparts.length ? fparts.join(" · ") : "Todas";
+    sortBtn.classList.toggle("active", sortMode!=="manual");
   }
 
   // ----- Menú contextual (clic derecho) de cada tarea -----
@@ -1604,22 +1599,15 @@
     closeTaskMenu();
   };
 
-  // ----- Buscador (colapsable) -----
-  const searchInput=$("#searchInput"), searchClear=$("#searchClear"), searchRow=$("#searchRow"), searchToggle=$("#searchToggle");
-  searchToggle.onclick = () => {
-    const show = searchRow.hidden;
-    searchRow.hidden = !show;
-    searchToggle.classList.toggle("on", show);
-    if(show){ searchInput.focus(); }
-    else { searchInput.value=""; searchQuery=""; searchClear.hidden=true; render(); }
-  };
+  // ----- Buscador (siempre visible en la barra lateral) -----
+  const searchInput=$("#searchInput"), searchClear=$("#searchClear");
   searchInput.oninput = () => {
     searchQuery = searchInput.value.trim().toLowerCase();
     searchClear.hidden = !searchInput.value;
     render();
   };
   searchClear.onclick = () => { searchInput.value=""; searchQuery=""; searchClear.hidden=true; render(); searchInput.focus(); };
-  searchInput.onkeydown = (e) => { if(e.key==="Escape"){ searchToggle.onclick(); } };
+  searchInput.onkeydown = (e) => { if(e.key==="Escape"){ searchClear.onclick(); } };
 
   // ----- Recordatorios de vencimiento -----
   function dueCounts(){
