@@ -183,7 +183,7 @@
   li.done .check{background:var(--accent)}
   li.done .check svg{stroke:#fff;opacity:1}
   .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-  .txt{min-width:0;max-width:100%;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:.25s;cursor:pointer}
+  .txt{min-width:0;max-width:100%;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:.25s;cursor:text}
   .meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:20px}
   li.done .txt{color:var(--done);text-decoration:line-through}
   .edit-input{
@@ -890,7 +890,6 @@
         }
         li.querySelector(".check").onclick = () => toggle(t.id);
         li.querySelector(".check").onkeydown = e => {if(e.key===" "||e.key==="Enter"){e.preventDefault();toggle(t.id);}};
-        li.querySelector(".txt").onclick = () => toggle(t.id);
         li.querySelector(".txt").ondblclick = () => startEdit(t.id, li);
         const sel=li.querySelector(".catsel");
         styleCatSel(sel, t.cat);
