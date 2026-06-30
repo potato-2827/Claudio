@@ -177,10 +177,11 @@
   }
   .check:hover{box-shadow:0 0 0 4px var(--accent-soft);transform:scale(1.08)}
   .check svg{position:absolute;inset:0;margin:auto;width:13px;height:13px;
-    stroke:#fff;stroke-width:3.5;fill:none;stroke-linecap:round;stroke-linejoin:round;
-    stroke-dasharray:20;stroke-dashoffset:20;transition:stroke-dashoffset .3s .05s}
+    stroke:var(--accent);stroke-width:3.5;fill:none;stroke-linecap:round;stroke-linejoin:round;
+    opacity:.45;transition:opacity .2s,stroke .2s}
+  .check:hover svg{opacity:.75}
   li.done .check{background:var(--accent)}
-  li.done .check svg{stroke-dashoffset:0}
+  li.done .check svg{stroke:#fff;opacity:1}
   .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
   .txt{min-width:0;max-width:100%;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:.25s;cursor:pointer}
   .meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:20px}
