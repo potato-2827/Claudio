@@ -208,8 +208,11 @@
   .subbtn:hover{background:var(--accent-soft);color:var(--accent)}
   .subbtn.complete{color:#16a34a}
   .subbtn.open{background:var(--accent-soft);color:var(--accent)}
-  .chev{display:block;flex:none;transform-origin:50% 50%;transition:transform .35s cubic-bezier(.4,0,.2,1)}
-  .subbtn.open .chev{transform:rotate(90deg)}
+  .chev{display:block;flex:none;transform-origin:50% 50%;
+    animation:chevToClosed .35s cubic-bezier(.4,0,.2,1) forwards}
+  .subbtn.open .chev{animation:chevToOpen .35s cubic-bezier(.4,0,.2,1) forwards}
+  @keyframes chevToOpen{from{transform:rotate(0deg)}to{transform:rotate(90deg)}}
+  @keyframes chevToClosed{from{transform:rotate(90deg)}to{transform:rotate(0deg)}}
 
   .hovwrap{position:relative;display:inline-flex}
   .hovlist{
