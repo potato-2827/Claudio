@@ -356,6 +356,16 @@
   .chip:not(.active):hover{background:var(--accent-soft)}
   .chip .x{margin-left:1px;font-size:.95rem;line-height:1;opacity:.8}
   .chip .x:hover{opacity:1;transform:scale(1.2)}
+  .chip .chip-edit{margin-left:1px;font-size:.85rem;line-height:1;opacity:.8}
+  .chip .chip-edit:hover{opacity:1;transform:scale(1.15)}
+  .catedit{display:inline-flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .catedit-swatches{display:inline-flex;gap:4px}
+  .catedit-swatch{
+    width:18px;height:18px;border-radius:50%;border:2px solid transparent;
+    cursor:pointer;padding:0;transition:.15s;
+  }
+  .catedit-swatch:hover{transform:scale(1.15)}
+  .catedit-swatch.active{border-color:var(--text)}
   .chip-add{
     border:1px dashed var(--row-border);cursor:pointer;background:transparent;
     color:var(--accent);padding:5px 11px;border-radius:99px;font-size:.8rem;font-weight:600;
@@ -672,6 +682,7 @@
   let prioFirst = localStorage.getItem("mis_tareas_prioFirst")==="1";  // importantes arriba (sobreescribe)
   let dueFirst  = localStorage.getItem("mis_tareas_dueFirst")==="1";   // por vencer arriba (sobreescribe)
   let addingCat = false;
+  let editingCat = null;  // id de la categoria en edicion (nombre/color), o null
   let searchQuery = "";         // texto del buscador (en minúsculas)
   let reminderDismissed = false; // banner de vencimientos descartado en esta sesión
   const expanded = new Set();   // ids de tareas con subtareas desplegadas
@@ -1060,9 +1071,13 @@
     catBar.insertAdjacentHTML("beforeend", `<span class="clbl" title="Categorías">🏷️</span>`);
     catBar.appendChild(makeChip("Todas", null, catFilter==="all", () => { catFilter="all"; render(); }));
     for(const c of cats){
-      catBar.appendChild(makeChip(c.name, c, catFilter===c.id, () => {
-        catFilter = catFilter===c.id ? "all" : c.id; render();
-      }));
+      if(editingCat===c.id){
+        catBar.appendChild(makeCatEditor(c));
+      } else {
+        catBar.appendChild(makeChip(c.name, c, catFilter===c.id, () => {
+          catFilter = catFilter===c.id ? "all" : c.id; render();
+        }));
+      }
     }
     if(addingCat){
       const inp=document.createElement("input");
@@ -1092,13 +1107,50 @@
     let html = "";
     if(cat) html += `<span class="dot" style="background:${active?'#fff':cat.color}"></span>`;
     html += `<span>${escapeHtml(name)}</span>`;
-    if(cat && active) html += `<span class="x" title="Eliminar categoría">✕</span>`;
+    if(cat && active) html += `<span class="chip-edit" title="Editar categoría">✎</span><span class="x" title="Eliminar categoría">✕</span>`;
     b.innerHTML = html;
     b.onclick = e => {
       if(e.target.classList.contains("x")){ e.stopPropagation(); deleteCat(cat); return; }
+      if(e.target.classList.contains("chip-edit")){ e.stopPropagation(); editingCat=cat.id; render(); return; }
       onClick();
     };
     return b;
+  }
+  function makeCatEditor(c){
+    const wrap=document.createElement("div");
+    wrap.className="catedit";
+    const inp=document.createElement("input");
+    inp.className="newcat"; inp.maxLength=24; inp.value=c.name;
+    wrap.appendChild(inp);
+    const swatches=document.createElement("div");
+    swatches.className="catedit-swatches";
+    PALETTE.forEach(color=>{
+      const sw=document.createElement("button");
+      sw.type="button";
+      sw.className="catedit-swatch"+(c.color===color?" active":"");
+      sw.style.background=color;
+      sw.title=color;
+      sw.onclick=e=>{
+        e.stopPropagation();
+        c.color=color;
+        swatches.querySelectorAll(".catedit-swatch").forEach(x=>x.classList.remove("active"));
+        sw.classList.add("active");
+        saveCats();
+      };
+      swatches.appendChild(sw);
+    });
+    wrap.appendChild(swatches);
+    let done=false;
+    const fin=keep=>{
+      if(done) return; done=true;
+      editingCat=null;
+      if(keep){ const v=inp.value.trim(); if(v) c.name=v; }
+      saveCats(); render();
+    };
+    inp.onkeydown=e=>{ if(e.key==="Enter"){e.preventDefault();fin(true);} else if(e.key==="Escape"){e.preventDefault();fin(false);} };
+    inp.onblur=()=>fin(true);
+    setTimeout(()=>{ inp.focus(); inp.select(); });
+    return wrap;
   }
   function createCat(name){
     name = (name||"").trim(); if(!name) return;
@@ -1748,7 +1800,7 @@
       prioFirst = d.prioFirst===true;
       dueFirst  = d.dueFirst===true;
       if(d.theme){ localStorage.setItem(THEMEKEY, d.theme); applyTheme(d.theme); }
-      statusFilter="all"; catFilter="all"; refreshSortBtns(); refreshToggles();
+      statusFilter="all"; catFilter="all"; editingCat=null; addingCat=false; refreshSortBtns(); refreshToggles();
       persistLocal(); syncServer(); render();
     };
     rd.readAsText(file);
