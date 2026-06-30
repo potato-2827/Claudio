@@ -300,6 +300,22 @@
   .attitem:hover .attdel{opacity:1}
   .attdel:hover{background:rgba(239,68,68,.12);color:var(--danger)}
 
+  .notessec{border-top:1px dashed var(--row-border);padding-top:8px;margin-top:3px}
+  .notesarea,.subnotes{
+    width:100%;box-sizing:border-box;resize:vertical;min-height:60px;
+    font:inherit;font-size:.84rem;color:var(--text);
+    background:var(--input-bg);border:1px solid var(--row-border);
+    border-radius:8px;padding:8px 10px;outline:none;transition:.2s;
+  }
+  .notesarea:focus,.subnotes:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .subnotesbtn{border:none;background:transparent;cursor:pointer;color:var(--muted);
+    opacity:0;width:24px;height:24px;border-radius:7px;flex:none;font-size:.8rem;
+    display:grid;place-items:center;transition:.2s}
+  .subitem:hover .subnotesbtn,.subnotesbtn.has-notes,.subnotesbtn.open{opacity:1}
+  .subnotesbtn:hover{background:var(--accent-soft)}
+  .subnotesbtn.open{background:var(--accent-soft)}
+  .subnotes-row{padding:2px 0 2px 27px}
+
   .empty{text-align:center;color:var(--muted);padding:38px 10px;font-size:.9rem}
   .empty .ico{font-size:2.4rem;display:block;margin-bottom:8px;opacity:.7}
 
@@ -658,6 +674,8 @@
   const expanded = new Set();   // ids de tareas con subtareas desplegadas
   const attExpanded = new Set(); // ids de tareas con el panel de archivos desplegado
   let lastToggleKey = null;      // que boton (sub/att de que tarea) se acaba de tocar, para animar solo ese
+  const notesExpanded = new Set();    // ids de tareas con el panel de notas desplegado
+  const subNotesExpanded = new Set(); // ids de subtareas con sus notas desplegadas
 
   const PALETTE=["#6366f1","#ec4899","#f59e0b","#10b981","#3b82f6","#8b5cf6","#ef4444","#14b8a6","#f97316","#0ea5e9"];
   let backupOn=false;   // respaldo a archivo vía Electron (IPC)
@@ -760,12 +778,15 @@
         const isOpen=expanded.has(t.id);
         const atts=t.attachments||[];
         const attOpen=attExpanded.has(t.id);
-        const panelOpen=isOpen||attOpen;
+        const notesOpen=notesExpanded.has(t.id);
+        const panelOpen=isOpen||attOpen||notesOpen;
         const chevHtml = animate => `<svg class="chev${animate?" anim":""}" viewBox="0 0 12 16" width="7" height="11"><polyline points="1.5,1.5 9.5,8 1.5,14.5" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
         const subLabel = `${chevHtml(toggleKey==="sub:"+t.id)} Subtareas${subs.length?` ${sdone}/${subs.length}`:""}`;
         const subClass = (subs.length?"has-sub":"") + (subs.length && sdone===subs.length ? " complete":"") + (isOpen?" open":"");
         const attLabel = `${chevHtml(toggleKey==="att:"+t.id)} Archivos${atts.length?` (${atts.length})`:""}`;
         const attClass = (atts.length?"has-sub":"") + (attOpen?" open":"");
+        const notesLabel = `${chevHtml(toggleKey==="notes:"+t.id)} Notas`;
+        const notesClass = (t.notes?"has-sub":"") + (notesOpen?" open":"");
         let html=`<div class="row">
           <span class="grip" draggable="true" title="Arrastra para reordenar">⠿</span>
           <div class="check" role="checkbox" aria-checked="${t.done}" tabindex="0">
@@ -792,6 +813,12 @@
                   ? atts.map(a=>`<div class="hovrow">${iconForName(a.name)} ${escapeHtml(a.name)}</div>`).join("")
                   : `<div class="hovempty">Sin archivos</div>`}</div>
               </span>
+              <span class="hovwrap">
+                <button class="subbtn notesbtn ${notesClass}" title="Ver/agregar notas">${notesLabel}</button>
+                <div class="hovlist">${t.notes
+                  ? `<div class="hovrow">${escapeHtml(t.notes)}</div>`
+                  : `<div class="hovempty">Sin notas</div>`}</div>
+              </span>
             </div>
           </div>
           <button class="edit" title="Editar">✎</button>
@@ -808,11 +835,16 @@
               </div>`;
             }
             for(const s of subs){
+              const sNotesOpen = subNotesExpanded.has(s.id);
               html+=`<div class="subitem ${s.done?"done":""}" data-sid="${s.id}">
                 <div class="subcheck"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div>
                 <span class="subtxt">${escapeHtml(s.text)}</span>
+                <button class="subnotesbtn ${s.notes?"has-notes":""}${sNotesOpen?" open":""}" title="Ver/agregar notas de la subtarea">📝</button>
                 <button class="subdel" title="Eliminar subtarea">✕</button>
               </div>`;
+              if(sNotesOpen){
+                html+=`<div class="subnotes-row"><textarea class="subnotes" data-sid="${s.id}" maxlength="2000" placeholder="Notas de esta subtarea…">${escapeHtml(s.notes||"")}</textarea></div>`;
+              }
             }
             html+=`<div class="subadd-row"><input class="subadd" type="text" maxlength="160" placeholder="Agregar subtarea y Enter…"></div>`;
           }
@@ -833,6 +865,11 @@
               </div>`;
             }
             html+=`</div>`;
+          }
+          if(notesOpen){
+            html+=`<div class="notessec">
+              <textarea class="notesarea" maxlength="4000" placeholder="Agregar notas a esta tarea…">${escapeHtml(t.notes||"")}</textarea>
+            </div>`;
           }
           html+=`</div>`;
         }
@@ -872,8 +909,21 @@
           lastToggleKey = "att:"+t.id;
           render();
         };
+        const notesWillOpen = !notesOpen;
+        li.querySelector(".notesbtn").onclick = () => {
+          if(notesWillOpen) notesExpanded.add(t.id); else notesExpanded.delete(t.id);
+          lastToggleKey = "notes:"+t.id;
+          render();
+          if(notesWillOpen){ const el=list.querySelector(`li[data-id="${t.id}"] .notesarea`); if(el) el.focus(); }
+        };
         li.querySelector(".edit").onclick = () => startEdit(t.id, li);
         li.querySelector(".del").onclick = () => remove(t.id, li);
+
+        if(notesOpen){
+          const notesarea=li.querySelector(".notesarea");
+          notesarea.oninput = () => { t.notes = notesarea.value; };
+          notesarea.onblur = () => { t.notes = notesarea.value.trim() || null; save(); };
+        }
 
         if(isOpen){
           li.querySelectorAll(".subitem").forEach(siEl=>{
@@ -882,6 +932,16 @@
             siEl.querySelector(".subtxt").onclick = () => toggleSub(t, sid);
             siEl.querySelector(".subtxt").ondblclick = () => editSub(t, sid, siEl);
             siEl.querySelector(".subdel").onclick = () => removeSub(t, sid);
+            siEl.querySelector(".subnotesbtn").onclick = () => {
+              if(subNotesExpanded.has(sid)) subNotesExpanded.delete(sid); else subNotesExpanded.add(sid);
+              render();
+            };
+          });
+          li.querySelectorAll(".subnotes").forEach(taEl=>{
+            const sid=taEl.dataset.sid;
+            const s=(t.subtasks||[]).find(x=>x.id===sid); if(!s) return;
+            taEl.oninput = () => { s.notes = taEl.value; };
+            taEl.onblur = () => { s.notes = taEl.value.trim() || null; save(); };
           });
           const subadd=li.querySelector(".subadd");
           subadd.onkeydown = e => { if(e.key==="Enter"){ e.preventDefault(); addSub(t, subadd.value); } };
