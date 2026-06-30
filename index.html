@@ -1459,6 +1459,10 @@
   }
   async function enableNotifications(){
     if(!("Notification" in window)){ alert("Tu navegador no soporta notificaciones."); return; }
+    if(localStorage.getItem("mis_tareas_notif")==="1"){
+      localStorage.removeItem("mis_tareas_notif");   // desactivar (el permiso del navegador queda como está)
+      return;
+    }
     const perm = await Notification.requestPermission();
     if(perm==="granted"){ localStorage.setItem("mis_tareas_notif","1"); notifyDueOnce(); }
   }
