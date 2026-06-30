@@ -251,6 +251,28 @@
   }
   .subadd:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 
+  .attsec{border-top:1px dashed var(--row-border);padding-top:8px;margin-top:3px;
+    display:flex;flex-direction:column;gap:6px}
+  .atthead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .attlbl{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
+  .attadd{border:1px dashed var(--row-border);background:transparent;color:var(--accent);
+    font-size:.78rem;font-weight:600;border-radius:8px;padding:4px 10px;cursor:pointer;transition:.2s}
+  .attadd:hover{background:var(--accent-soft);border-color:var(--accent)}
+  .attadd:disabled{opacity:.6;cursor:default}
+  .attitem{display:flex;align-items:center;gap:8px}
+  .attopen{flex:1;display:flex;align-items:center;gap:8px;min-width:0;
+    cursor:pointer;border:none;background:transparent;font:inherit;color:var(--text);
+    padding:5px 8px;border-radius:8px;text-align:left}
+  .attopen:hover{background:var(--accent-soft)}
+  .atticon{font-size:1rem;flex:none}
+  .attname{flex:1;font-size:.84rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .attsize{font-size:.72rem;color:var(--muted);flex:none}
+  .attdel{border:none;background:transparent;cursor:pointer;color:var(--muted);
+    opacity:0;width:24px;height:24px;border-radius:7px;flex:none;font-size:.85rem;
+    display:grid;place-items:center;transition:.2s}
+  .attitem:hover .attdel{opacity:1}
+  .attdel:hover{background:rgba(239,68,68,.12);color:var(--danger)}
+
   .empty{text-align:center;color:var(--muted);padding:38px 10px;font-size:.9rem}
   .empty .ico{font-size:2.4rem;display:block;margin-bottom:8px;opacity:.7}
 
@@ -435,6 +457,9 @@
       <button id="notifBtn">🔔&nbsp; Activar avisos de vencimiento</button>
     </div>
 
+    <input type="file" id="attInput" multiple hidden
+      accept=".pdf,.doc,.docx,.ppt,.pptx,image/png,image/jpeg,image/gif,image/webp">
+
     <div class="progress-wrap">
       <div class="progress-meta">
         <span id="progressLabel">Sin tareas todavía</span>
@@ -612,6 +637,11 @@
   const PALETTE=["#6366f1","#ec4899","#f59e0b","#10b981","#3b82f6","#8b5cf6","#ef4444","#14b8a6","#f97316","#0ea5e9"];
   let backupOn=false;   // respaldo a archivo vía Electron (IPC)
 
+  // ----- Adjuntos (Supabase Storage) -----
+  const ATT_BUCKET="adjuntos";
+  const ATT_ALLOWED_EXT=["pdf","doc","docx","ppt","pptx","png","jpg","jpeg","gif","webp"];
+  let attTargetTaskId=null;
+
   const $ = s => document.querySelector(s);
   const list=$("#list"), input=$("#input"), catBar=$("#catBar");
   const catById = id => cats.find(c=>c.id===id);
@@ -734,7 +764,24 @@
               <button class="subdel" title="Eliminar subtarea">✕</button>
             </div>`;
           }
-          html+=`<div class="subadd-row"><input class="subadd" type="text" maxlength="160" placeholder="Agregar subtarea y Enter…"></div></div>`;
+          html+=`<div class="subadd-row"><input class="subadd" type="text" maxlength="160" placeholder="Agregar subtarea y Enter…"></div>`;
+          const atts=t.attachments||[];
+          html+=`<div class="attsec">
+            <div class="atthead">
+              <span class="attlbl">📎 Archivos${atts.length?` (${atts.length})`:""}</span>
+              <button class="attadd">+ Adjuntar</button>
+            </div>`;
+          for(const a of atts){
+            html+=`<div class="attitem" data-aid="${a.id}">
+              <button class="attopen" title="Abrir">
+                <span class="atticon">${iconForName(a.name)}</span>
+                <span class="attname">${escapeHtml(a.name)}</span>
+                <span class="attsize">${formatSize(a.size)}</span>
+              </button>
+              <button class="attdel" title="Eliminar adjunto">✕</button>
+            </div>`;
+          }
+          html+=`</div></div>`;
         }
         li.innerHTML=html;
 
@@ -777,6 +824,14 @@
           });
           const subadd=li.querySelector(".subadd");
           subadd.onkeydown = e => { if(e.key==="Enter"){ e.preventDefault(); addSub(t, subadd.value); } };
+
+          li.querySelector(".attadd").onclick = () => { attTargetTaskId=t.id; $("#attInput").click(); };
+          li.querySelectorAll(".attitem").forEach(aiEl=>{
+            const aid=aiEl.dataset.aid;
+            const a=(t.attachments||[]).find(x=>x.id===aid); if(!a) return;
+            aiEl.querySelector(".attopen").onclick = () => openAttachment(a);
+            aiEl.querySelector(".attdel").onclick = () => removeAttachment(t, aid);
+          });
         }
         list.appendChild(li);
       }
@@ -1007,6 +1062,59 @@
     };
     inp.onkeydown=e=>{ if(e.key==="Enter"){e.preventDefault();fin(true);} else if(e.key==="Escape"){e.preventDefault();fin(false);} };
     inp.onblur=()=>fin(true);
+  }
+
+  // ----- Adjuntos -----
+  function extOf(name){ const m=/\.([a-z0-9]+)$/i.exec(name||""); return m?m[1].toLowerCase():""; }
+  function iconForName(name){
+    const e=extOf(name);
+    if(e==="pdf") return "📕";
+    if(e==="doc"||e==="docx") return "📘";
+    if(e==="ppt"||e==="pptx") return "📙";
+    if(["png","jpg","jpeg","gif","webp"].includes(e)) return "🖼️";
+    return "📎";
+  }
+  function formatSize(bytes){
+    if(!bytes) return "";
+    if(bytes<1024) return bytes+" B";
+    if(bytes<1024*1024) return Math.round(bytes/1024)+" KB";
+    return (bytes/(1024*1024)).toFixed(1)+" MB";
+  }
+  async function uploadAttachments(t, files){
+    if(!sbUser || !files || !files.length) return;
+    const btn=list.querySelector(`li[data-id="${t.id}"] .attadd`);
+    const rejected=[];
+    if(btn){ btn.disabled=true; btn.textContent="Subiendo…"; }
+    try{
+      for(const file of files){
+        const ext=extOf(file.name);
+        if(!ATT_ALLOWED_EXT.includes(ext)){ rejected.push(file.name); continue; }
+        const id="a"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+        const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+        const path=`${sbUser.id}/${t.id}/${id}-${safeName}`;
+        const { error } = await sb.storage.from(ATT_BUCKET).upload(path, file);
+        if(error){ rejected.push(file.name); continue; }
+        if(!t.attachments) t.attachments=[];
+        t.attachments.push({ id, name:file.name, path, size:file.size, type:file.type });
+      }
+    } finally {
+      save(); render();
+      if(rejected.length) alert("No se pudieron adjuntar: " + rejected.join(", "));
+    }
+  }
+  async function openAttachment(a){
+    try{
+      const { data, error } = await sb.storage.from(ATT_BUCKET).createSignedUrl(a.path, 60);
+      if(error || !data) { alert("No se pudo abrir el archivo."); return; }
+      window.open(data.signedUrl, "_blank");
+    }catch(e){ alert("No se pudo abrir el archivo."); }
+  }
+  async function removeAttachment(t, aid){
+    const a=(t.attachments||[]).find(x=>x.id===aid); if(!a) return;
+    if(!confirm(`¿Eliminar "${a.name}"?`)) return;
+    try{ await sb.storage.from(ATT_BUCKET).remove([a.path]); }catch(e){}
+    t.attachments=(t.attachments||[]).filter(x=>x.id!==aid);
+    save(); render();
   }
 
   function startEdit(id, li){
@@ -1417,6 +1525,11 @@
   $("#exportBtn").onclick = () => { exportData(); backupMenu.hidden=true; };
   $("#importBtn").onclick = () => $("#importFile").click();
   $("#importFile").onchange = ev => { importData(ev.target.files[0]); ev.target.value=""; backupMenu.hidden=true; };
+  $("#attInput").onchange = ev => {
+    const files=[...ev.target.files]; ev.target.value="";
+    const t=tasks.find(x=>x.id===attTargetTaskId); attTargetTaskId=null;
+    if(t && files.length) uploadAttachments(t, files);
+  };
 
   // ----- Arranque: cargar el estado desde el archivo (vía Electron) -----
   async function boot(){
