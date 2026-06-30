@@ -724,7 +724,11 @@
       for(const k of keys){ const r=k(a,b); if(r) return r; }
       return 0;
     });
-    const reorderable = sortMode==="manual" && !prioFirst && !dueFirst;
+    // Arrastrar siempre que el orden sea "Manual": si hay interruptores de
+    // prioridad/vencimiento activos, igual se puede arrastrar y al soltar la
+    // lista se reacomoda segun esos interruptores (el orden manual queda
+    // como desempate dentro de cada nivel de prioridad/vencimiento).
+    const reorderable = sortMode==="manual";
 
     list.innerHTML = "";
     if(!visible.length){
@@ -828,7 +832,7 @@
           wireDrag(li, t.id);
         } else {
           grip.draggable=false; grip.classList.add("locked");
-          grip.title="Para arrastrar: orden «Manual» y sin interruptores de prioridad/vencimiento";
+          grip.title="Para arrastrar: elegí el orden «Manual» (botón ↕ Ordenar)";
         }
         li.querySelector(".check").onclick = () => toggle(t.id);
         li.querySelector(".check").onkeydown = e => {if(e.key===" "||e.key==="Enter"){e.preventDefault();toggle(t.id);}};
