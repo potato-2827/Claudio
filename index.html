@@ -633,6 +633,7 @@
   let searchQuery = "";         // texto del buscador (en minúsculas)
   let reminderDismissed = false; // banner de vencimientos descartado en esta sesión
   const expanded = new Set();   // ids de tareas con subtareas desplegadas
+  const attExpanded = new Set(); // ids de tareas con el panel de archivos desplegado
 
   const PALETTE=["#6366f1","#ec4899","#f59e0b","#10b981","#3b82f6","#8b5cf6","#ef4444","#14b8a6","#f97316","#0ea5e9"];
   let backupOn=false;   // respaldo a archivo vía Electron (IPC)
@@ -728,8 +729,13 @@
         const subs=t.subtasks||[];
         const sdone=subs.filter(s=>s.done).length;
         const isOpen=expanded.has(t.id);
+        const atts=t.attachments||[];
+        const attOpen=attExpanded.has(t.id);
+        const panelOpen=isOpen||attOpen;
         const subLabel = subs.length ? `${isOpen?"▾":"▸"} ${sdone}/${subs.length}` : "▸";
         const subClass = (subs.length?"has-sub":"") + (subs.length && sdone===subs.length ? " complete":"");
+        const attLabel = `${attOpen?"▾":"▸"} 📎${atts.length?" "+atts.length:""}`;
+        const attClass = atts.length?"has-sub":"";
         let html=`<div class="row">
           <span class="grip" draggable="true" title="Arrastra para reordenar">⠿</span>
           <div class="check" role="checkbox" aria-checked="${t.done}" tabindex="0">
@@ -742,46 +748,51 @@
               <button class="due-btn ${di.cls}${t.due?" has-due":""}" title="${t.due?"Cambiar fecha (clic) · quitar (clic derecho)":"Poner fecha de vencimiento"}">${di.label}</button>
               <input type="date" class="due-input" value="${t.due||""}">
               <button class="subbtn ${subClass}" title="${subs.length?"Ver/ocultar subtareas":"Agregar subtareas"}">${subLabel}</button>
+              <button class="subbtn attbtn ${attClass}" title="Ver/agregar archivos adjuntos">${attLabel}</button>
             </div>
           </div>
           <button class="star ${t.important?"on":""}" title="Marcar como importante">${t.important?"★":"☆"}</button>
           <button class="edit" title="Editar">✎</button>
           <button class="del" title="Eliminar">✕</button>
         </div>`;
-        if(isOpen){
+        if(panelOpen){
           html+=`<div class="subpanel">`;
-          if(subs.length){
-            const pct = Math.round(sdone/subs.length*100);
-            html+=`<div class="subhead ${sdone===subs.length?"complete":""}">
-              <div class="subbar"><span style="width:${pct}%"></span></div>
-              <span class="subcount">${sdone}/${subs.length}</span>
-            </div>`;
+          if(isOpen){
+            if(subs.length){
+              const pct = Math.round(sdone/subs.length*100);
+              html+=`<div class="subhead ${sdone===subs.length?"complete":""}">
+                <div class="subbar"><span style="width:${pct}%"></span></div>
+                <span class="subcount">${sdone}/${subs.length}</span>
+              </div>`;
+            }
+            for(const s of subs){
+              html+=`<div class="subitem ${s.done?"done":""}" data-sid="${s.id}">
+                <div class="subcheck"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div>
+                <span class="subtxt">${escapeHtml(s.text)}</span>
+                <button class="subdel" title="Eliminar subtarea">✕</button>
+              </div>`;
+            }
+            html+=`<div class="subadd-row"><input class="subadd" type="text" maxlength="160" placeholder="Agregar subtarea y Enter…"></div>`;
           }
-          for(const s of subs){
-            html+=`<div class="subitem ${s.done?"done":""}" data-sid="${s.id}">
-              <div class="subcheck"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div>
-              <span class="subtxt">${escapeHtml(s.text)}</span>
-              <button class="subdel" title="Eliminar subtarea">✕</button>
-            </div>`;
+          if(attOpen){
+            html+=`<div class="attsec">
+              <div class="atthead">
+                <span class="attlbl">📎 Archivos${atts.length?` (${atts.length})`:""}</span>
+                <button class="attadd">+ Adjuntar</button>
+              </div>`;
+            for(const a of atts){
+              html+=`<div class="attitem" data-aid="${a.id}">
+                <button class="attopen" title="Abrir">
+                  <span class="atticon">${iconForName(a.name)}</span>
+                  <span class="attname">${escapeHtml(a.name)}</span>
+                  <span class="attsize">${formatSize(a.size)}</span>
+                </button>
+                <button class="attdel" title="Eliminar adjunto">✕</button>
+              </div>`;
+            }
+            html+=`</div>`;
           }
-          html+=`<div class="subadd-row"><input class="subadd" type="text" maxlength="160" placeholder="Agregar subtarea y Enter…"></div>`;
-          const atts=t.attachments||[];
-          html+=`<div class="attsec">
-            <div class="atthead">
-              <span class="attlbl">📎 Archivos${atts.length?` (${atts.length})`:""}</span>
-              <button class="attadd">+ Adjuntar</button>
-            </div>`;
-          for(const a of atts){
-            html+=`<div class="attitem" data-aid="${a.id}">
-              <button class="attopen" title="Abrir">
-                <span class="atticon">${iconForName(a.name)}</span>
-                <span class="attname">${escapeHtml(a.name)}</span>
-                <span class="attsize">${formatSize(a.size)}</span>
-              </button>
-              <button class="attdel" title="Eliminar adjunto">✕</button>
-            </div>`;
-          }
-          html+=`</div></div>`;
+          html+=`</div>`;
         }
         li.innerHTML=html;
 
@@ -811,6 +822,11 @@
           render();
           if(willOpen){ const el=list.querySelector(`li[data-id="${t.id}"] .subadd`); if(el) el.focus(); }
         };
+        const attWillOpen = !attOpen;
+        li.querySelector(".attbtn").onclick = () => {
+          if(attWillOpen) attExpanded.add(t.id); else attExpanded.delete(t.id);
+          render();
+        };
         li.querySelector(".edit").onclick = () => startEdit(t.id, li);
         li.querySelector(".del").onclick = () => remove(t.id, li);
 
@@ -824,7 +840,8 @@
           });
           const subadd=li.querySelector(".subadd");
           subadd.onkeydown = e => { if(e.key==="Enter"){ e.preventDefault(); addSub(t, subadd.value); } };
-
+        }
+        if(attOpen){
           li.querySelector(".attadd").onclick = () => { attTargetTaskId=t.id; $("#attInput").click(); };
           li.querySelectorAll(".attitem").forEach(aiEl=>{
             const aid=aiEl.dataset.aid;
