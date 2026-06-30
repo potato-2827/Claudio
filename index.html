@@ -747,9 +747,9 @@
         const atts=t.attachments||[];
         const attOpen=attExpanded.has(t.id);
         const panelOpen=isOpen||attOpen;
-        const subLabel = subs.length ? `${isOpen?"▾":"▸"} ${sdone}/${subs.length}` : "▸";
+        const subLabel = `${isOpen?"▾":"▸"} Subtareas${subs.length?` ${sdone}/${subs.length}`:""}`;
         const subClass = (subs.length?"has-sub":"") + (subs.length && sdone===subs.length ? " complete":"");
-        const attLabel = `${attOpen?"▾":"▸"} 📎${atts.length?" "+atts.length:""}`;
+        const attLabel = `${attOpen?"▾":"▸"} Archivos${atts.length?` (${atts.length})`:""}`;
         const attClass = atts.length?"has-sub":"";
         let html=`<div class="row">
           <span class="grip" draggable="true" title="Arrastra para reordenar">⠿</span>
