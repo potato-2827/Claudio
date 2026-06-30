@@ -479,8 +479,9 @@
   .search-row[hidden]{display:none}
   .search-row:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
   .search-ico{font-size:.9rem;opacity:.7;flex:none}
-  .search-input{flex:1;border:none;background:transparent;color:var(--text);
-    font:inherit;font-size:.92rem;padding:9px 0;outline:none}
+  input.search-input{flex:1;border:none;background:transparent;color:var(--text);
+    font:inherit;font-size:.92rem;padding:9px 0;border-radius:0;outline:none}
+  input.search-input:focus{border:none;box-shadow:none}
   .search-input::placeholder{color:var(--muted)}
   .search-clear{border:none;background:transparent;color:var(--muted);cursor:pointer;
     font-size:.85rem;padding:4px;border-radius:7px;flex:none}
