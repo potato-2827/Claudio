@@ -57,7 +57,7 @@
   .app{
     position:relative;
     width:100%;max-width:none;
-    height:100vh;
+    min-height:100vh;
     background:transparent;
     border:none;border-radius:0;
     padding:0;
@@ -83,14 +83,17 @@
     border:1px solid var(--row-border);border-radius:14px;background:var(--card);
     padding:9px 11px 11px;
   }
-  .mc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .mc-head{display:flex;align-items:center;gap:2px;margin-bottom:6px}
   .mc-head button{
     border:none;background:transparent;color:var(--muted);cursor:pointer;
     width:24px;height:24px;border-radius:8px;font-size:1rem;line-height:1;
-    display:grid;place-items:center;transition:.15s;
+    display:grid;place-items:center;transition:.15s;flex:none;
   }
   .mc-head button:hover{background:var(--accent-soft);color:var(--accent)}
-  #mcLabel{font-size:.8rem;font-weight:700;text-transform:capitalize}
+  #mcLabel{flex:1;text-align:center;font-size:.8rem;font-weight:700;text-transform:capitalize}
+  .mc-toggle{transition:transform .2s !important}
+  .mini-cal.collapsed .mc-toggle{transform:rotate(-90deg)}
+  .mini-cal.collapsed .mc-grid{display:none}
   .mc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
   .mc-dow{text-align:center;font-size:.6rem;font-weight:700;color:var(--muted);padding:2px 0 4px}
   .mc-cell{
@@ -114,20 +117,6 @@
   .mc-grid .hovlist{left:50%;transform:translateX(-50%);top:calc(100% + 4px)}
   .mc-grid .hovlist.mc-right{left:auto;right:-8px;transform:none}
   .mc-grid .hovlist.mc-left{left:-8px;transform:none}
-
-  /* Pantallas anchas: la barra superior pasa a ser una barra lateral fija */
-  @media (min-width:760px){
-    .app{flex-direction:row}
-    .sidebar{
-      flex:0 0 230px;flex-direction:column;flex-wrap:nowrap;align-items:stretch;
-      gap:16px;height:100vh;overflow-y:auto;
-      border-right:1px solid var(--row-border);
-      padding:20px 16px;
-    }
-    .mini-cal{order:2;flex:none;width:100%;max-width:none;margin:0}
-    .head-actions{order:3;margin-top:auto;justify-content:center}
-    .main-content{padding:20px 26px 14px;min-width:0}
-  }
 
   .popover{
     position:absolute;top:62px;right:24px;z-index:30;min-width:218px;
@@ -180,7 +169,7 @@
   .filters button.active{background:var(--accent);color:#fff}
   .filters button:not(.active):hover{background:var(--accent-soft);color:var(--accent)}
 
-  ul{list-style:none;overflow-y:auto;flex:1;margin:0 -6px;padding:0 6px;
+  ul{list-style:none;overflow-y:visible;flex:none;margin:0 -6px;padding:0 6px;
     scrollbar-width:none;-ms-overflow-style:none}
   ul::-webkit-scrollbar{width:0;height:0;display:none}
   li{
@@ -523,6 +512,22 @@
   .login-btn-google{background:#fff;color:#1f1f1f;border:1px solid #dadce0}
   .login-btn-google:hover{filter:none;background:#f7f8f8}
   .login-note{font-size:.78rem;color:var(--muted);margin:16px 0 0}
+
+  /* Pantallas anchas: la barra superior pasa a ser una barra lateral fija,
+     con scroll interno (en celular la pagina entera se scrollea en cambio). */
+  @media (min-width:760px){
+    .app{flex-direction:row;height:100vh}
+    .sidebar{
+      flex:0 0 230px;flex-direction:column;flex-wrap:nowrap;align-items:stretch;
+      gap:16px;height:100vh;overflow-y:auto;
+      border-right:1px solid var(--row-border);
+      padding:20px 16px;
+    }
+    .mini-cal{order:2;flex:none;width:100%;max-width:none;margin:0}
+    .head-actions{order:3;margin-top:auto;justify-content:center}
+    .main-content{padding:20px 26px 14px;min-width:0;flex:1;min-height:0}
+    ul{flex:1;overflow-y:auto}
+  }
 </style>
 </head>
 <body>
@@ -537,6 +542,7 @@
           <button type="button" id="mcPrev" title="Mes anterior">‹</button>
           <span id="mcLabel"></span>
           <button type="button" id="mcNext" title="Mes siguiente">›</button>
+          <button type="button" id="mcToggle" class="mc-toggle" title="Colapsar/expandir calendario">▾</button>
         </div>
         <div class="mc-grid" id="mcGrid"></div>
       </div>
@@ -1121,6 +1127,11 @@
   }
   $("#mcPrev").onclick = () => { calMonth=new Date(calMonth.getFullYear(), calMonth.getMonth()-1, 1); renderMiniCal(); };
   $("#mcNext").onclick = () => { calMonth=new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 1); renderMiniCal(); };
+  if(localStorage.getItem("mis_tareas_calCollapsed")==="1") $("#miniCal").classList.add("collapsed");
+  $("#mcToggle").onclick = () => {
+    const on=$("#miniCal").classList.toggle("collapsed");
+    localStorage.setItem("mis_tareas_calCollapsed", on?"1":"0");
+  };
 
   function sortKeys(){
     const ks=[];
