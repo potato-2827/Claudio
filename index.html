@@ -551,18 +551,22 @@
           <button id="searchClear" class="search-clear" title="Limpiar búsqueda" hidden>✕</button>
         </div>
 
-        <div class="fp-section">
-          <div class="fp-label">Mostrar</div>
-          <div class="filters">
-            <button data-filter="all" class="active">Todas</button>
-            <button data-filter="active">Pendientes</button>
-            <button data-filter="done">Completadas</button>
+        <div class="filter-wrap">
+          <button class="filter-btn" id="showBtn">👁 Mostrar</button>
+          <div class="popover filter-pop" id="showPop" hidden>
+            <div class="filters">
+              <button data-filter="all" class="active">Todas</button>
+              <button data-filter="active">Pendientes</button>
+              <button data-filter="done">Completadas</button>
+            </div>
           </div>
         </div>
 
-        <div class="fp-section">
-          <div class="fp-label">Categoría</div>
-          <div class="cat-bar" id="catBar"></div>
+        <div class="filter-wrap">
+          <button class="filter-btn" id="catBtn">🏷️ Categoría</button>
+          <div class="popover filter-pop" id="catPop" hidden>
+            <div class="cat-bar" id="catBar"></div>
+          </div>
         </div>
 
         <div class="fp-section">
@@ -1530,26 +1534,37 @@
     tasks=tasks.filter(t=>!t.done); save(); render();
   };
 
-  // ----- Botón de Ordenar (menú desplegable, posición fija para no recortarse
-  // si vive dentro de la barra lateral con scroll propio) -----
+  // ----- Botones Mostrar/Categoría/Ordenar (menús desplegables, posición fija
+  // para no recortarse: viven dentro de la barra lateral con scroll propio) -----
+  const showBtn=$("#showBtn"), showPop=$("#showPop");
+  const catBtn=$("#catBtn"), catPop=$("#catPop");
   const sortBtn=$("#sortBtn"), sortPop=$("#sortPop");
-  sortBtn.onclick = e => {
-    e.stopPropagation();
-    const show = sortPop.hidden;
-    if(show){
-      const r=sortBtn.getBoundingClientRect();
-      const mw=sortPop.offsetWidth||260, mh=sortPop.offsetHeight||260;
-      let x=r.left, y=r.bottom+6;
-      if(x+mw > window.innerWidth)  x = window.innerWidth  - mw - 8;
-      if(y+mh > window.innerHeight) y = window.innerHeight - mh - 8;
-      sortPop.style.left = Math.max(8,x)+"px";
-      sortPop.style.top  = Math.max(8,y)+"px";
-    }
-    sortPop.hidden = !show;
-  };
-  sortPop.onclick = e => e.stopPropagation();
-  document.addEventListener("click", () => { sortPop.hidden = true; });
+  const sbPops=[showPop, catPop, sortPop];
+  function wirePopBtn(btn, pop){
+    btn.onclick = e => {
+      e.stopPropagation();
+      const show = pop.hidden;
+      sbPops.forEach(p=>{ if(p!==pop) p.hidden=true; });
+      if(show){
+        const r=btn.getBoundingClientRect();
+        const mw=pop.offsetWidth||260, mh=pop.offsetHeight||260;
+        let x=r.left, y=r.bottom+6;
+        if(x+mw > window.innerWidth)  x = window.innerWidth  - mw - 8;
+        if(y+mh > window.innerHeight) y = window.innerHeight - mh - 8;
+        pop.style.left = Math.max(8,x)+"px";
+        pop.style.top  = Math.max(8,y)+"px";
+      }
+      pop.hidden = !show;
+    };
+    pop.onclick = e => e.stopPropagation();
+  }
+  wirePopBtn(showBtn, showPop);
+  wirePopBtn(catBtn, catPop);
+  wirePopBtn(sortBtn, sortPop);
+  document.addEventListener("click", () => { sbPops.forEach(p=>p.hidden=true); });
   function updateFilterSummary(){
+    showBtn.classList.toggle("active", statusFilter!=="all");
+    catBtn.classList.toggle("active", catFilter!=="all");
     sortBtn.classList.toggle("active", sortMode!=="manual");
   }
 
