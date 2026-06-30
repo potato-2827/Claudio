@@ -208,9 +208,10 @@
   .subbtn:hover{background:var(--accent-soft);color:var(--accent)}
   .subbtn.complete{color:#16a34a}
   .subbtn.open{background:var(--accent-soft);color:var(--accent)}
-  .chev{display:block;flex:none;transform-origin:50% 50%;
-    animation:chevToClosed .35s cubic-bezier(.4,0,.2,1) forwards}
-  .subbtn.open .chev{animation:chevToOpen .35s cubic-bezier(.4,0,.2,1) forwards}
+  .chev{display:block;flex:none;transform-origin:50% 50%}
+  .subbtn.open .chev{transform:rotate(90deg)}
+  .chev.anim{animation:chevToClosed .35s cubic-bezier(.4,0,.2,1) forwards}
+  .subbtn.open .chev.anim{animation:chevToOpen .35s cubic-bezier(.4,0,.2,1) forwards}
   @keyframes chevToOpen{from{transform:rotate(0deg)}to{transform:rotate(90deg)}}
   @keyframes chevToClosed{from{transform:rotate(90deg)}to{transform:rotate(0deg)}}
 
@@ -655,6 +656,7 @@
   let reminderDismissed = false; // banner de vencimientos descartado en esta sesión
   const expanded = new Set();   // ids de tareas con subtareas desplegadas
   const attExpanded = new Set(); // ids de tareas con el panel de archivos desplegado
+  let lastToggleKey = null;      // que boton (sub/att de que tarea) se acaba de tocar, para animar solo ese
 
   const PALETTE=["#6366f1","#ec4899","#f59e0b","#10b981","#3b82f6","#8b5cf6","#ef4444","#14b8a6","#f97316","#0ea5e9"];
   let backupOn=false;   // respaldo a archivo vía Electron (IPC)
@@ -709,6 +711,7 @@
   const saveCats = save;
 
   function render(){
+    const toggleKey = lastToggleKey; lastToggleKey = null;
     renderCats();
     renderReminderBanner();
     updateFilterSummary();
@@ -753,10 +756,10 @@
         const atts=t.attachments||[];
         const attOpen=attExpanded.has(t.id);
         const panelOpen=isOpen||attOpen;
-        const CHEV=`<svg class="chev" viewBox="0 0 12 16" width="7" height="11"><polyline points="1.5,1.5 9.5,8 1.5,14.5" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-        const subLabel = `${CHEV} Subtareas${subs.length?` ${sdone}/${subs.length}`:""}`;
+        const chevHtml = animate => `<svg class="chev${animate?" anim":""}" viewBox="0 0 12 16" width="7" height="11"><polyline points="1.5,1.5 9.5,8 1.5,14.5" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+        const subLabel = `${chevHtml(toggleKey==="sub:"+t.id)} Subtareas${subs.length?` ${sdone}/${subs.length}`:""}`;
         const subClass = (subs.length?"has-sub":"") + (subs.length && sdone===subs.length ? " complete":"") + (isOpen?" open":"");
-        const attLabel = `${CHEV} Archivos${atts.length?` (${atts.length})`:""}`;
+        const attLabel = `${chevHtml(toggleKey==="att:"+t.id)} Archivos${atts.length?` (${atts.length})`:""}`;
         const attClass = (atts.length?"has-sub":"") + (attOpen?" open":"");
         let html=`<div class="row">
           <span class="grip" draggable="true" title="Arrastra para reordenar">⠿</span>
@@ -851,12 +854,14 @@
         const willOpen = !isOpen;
         li.querySelector(".subbtn").onclick = () => {
           if(willOpen) expanded.add(t.id); else expanded.delete(t.id);
+          lastToggleKey = "sub:"+t.id;
           render();
           if(willOpen){ const el=list.querySelector(`li[data-id="${t.id}"] .subadd`); if(el) el.focus(); }
         };
         const attWillOpen = !attOpen;
         li.querySelector(".attbtn").onclick = () => {
           if(attWillOpen) attExpanded.add(t.id); else attExpanded.delete(t.id);
+          lastToggleKey = "att:"+t.id;
           render();
         };
         li.querySelector(".edit").onclick = () => startEdit(t.id, li);
