@@ -499,6 +499,9 @@
   .due-btn.due-green{border-color:#22c55e;color:#15803d}
   [data-theme="dark"] .due-btn.due-green{color:#5fe08a}
   .due-btn.due-done{opacity:.55;text-decoration:line-through}
+  .due-btn .due-real{display:none}
+  .due-btn:hover .due-label{display:none}
+  .due-btn:hover .due-real{display:inline}
   .subdue-btn{font-size:.66rem;padding:2px 7px;display:inline-block}
   .subdue-btn.inherited{font-style:italic}
 
@@ -1024,7 +1027,7 @@
             <span class="txt">${escapeHtml(t.text)}</span>
             <div class="meta">
               <select class="catsel" title="Categoría">${catOptions(t.cat)}</select>
-              <button class="due-btn ${di.cls}${t.due?" has-due":""}" title="${t.due?(di.overdue?`Venció el ${di.dateLabel} · `:"")+"Cambiar fecha (clic) · quitar (clic derecho)":"Poner fecha de vencimiento"}">${di.label}</button>
+              <button class="due-btn ${di.cls}${t.due?" has-due":""}" title="${t.due?"Cambiar fecha (clic) · quitar (clic derecho)":"Poner fecha de vencimiento"}">${dueLabelHtml(di)}</button>
               <span class="hovwrap">
                 <button class="subbtn ${subClass}" title="${subs.length?"Ver/ocultar subtareas":"Agregar subtareas"}">${subLabel}</button>
                 <div class="hovlist">${subs.length
@@ -1066,11 +1069,11 @@
               const sdi = dueInfo({due:sEffDue, done:s.done});
               const sDueTitle = sInherited
                 ? "Hereda la fecha de la tarea (clic para poner una propia)"
-                : (s.due ? (sdi.overdue?`Venció el ${sdi.dateLabel} · `:"")+"Cambiar fecha (clic) · quitar (clic derecho)" : "Poner fecha de vencimiento");
+                : (s.due ? "Cambiar fecha (clic) · quitar (clic derecho)" : "Poner fecha de vencimiento");
               html+=`<div class="subitem ${s.done?"done":""}" data-sid="${s.id}">
                 <div class="subcheck"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div>
                 <span class="subtxt">${escapeHtml(s.text)}</span>
-                <button class="due-btn subdue-btn ${sdi.cls}${sEffDue?" has-due":""}${sInherited?" inherited":""}" title="${sDueTitle}">${sdi.label}</button>
+                <button class="due-btn subdue-btn ${sdi.cls}${sEffDue?" has-due":""}${sInherited?" inherited":""}" title="${sDueTitle}">${dueLabelHtml(sdi)}</button>
                 <button class="subnotesbtn ${s.notes?"has-notes":""}${sNotesOpen?" open":""}" title="Ver/agregar notas de la subtarea">${ICONS.notes(13)}</button>
                 <button class="subeditbtn" title="Editar subtarea">${ICONS.edit(13)}</button>
                 <button class="subdel" title="Eliminar subtarea">${ICONS.close(13)}</button>
@@ -1249,6 +1252,10 @@
     const cls = overdue ? "due-overdue" : days<3 ? "due-red" : days<7 ? "due-orange" : days<14 ? "due-yellow" : "due-green";
     const label = overdue ? "Vencida" : dateLabel;
     return {cls, label, dateLabel, overdue};
+  }
+  function dueLabelHtml(di){
+    if(!di.overdue) return di.label;
+    return `<span class="due-label">Vencida</span><span class="due-real">${di.dateLabel}</span>`;
   }
 
   // ----- Mini calendario -----
