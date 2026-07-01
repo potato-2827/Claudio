@@ -90,6 +90,14 @@
   .sb-controls,.head-actions{display:none}
   .sidebar.mnav-open .sb-controls{display:block}
   .sidebar.mnav-open .head-actions{display:flex}
+  .mobile-action-row{display:none}
+  .sidebar.mnav-open .mobile-action-row{
+    display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+    position:sticky;top:0;z-index:16;background:var(--card);
+    padding:8px 6px;margin:0 -6px 6px;border-radius:12px;
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  }
+  .mobile-action-row .fp-section{border-bottom:none;padding:0;flex:1 1 100%}
   .ls-pop{position:absolute;top:calc(100% + 6px);left:0;right:auto;min-width:210px;max-width:280px;z-index:40}
   .ls-row{display:flex;align-items:center;gap:2px;border-radius:9px}
   .ls-row.active{background:var(--accent-soft)}
@@ -618,6 +626,7 @@
     .sb-controls{display:block!important;flex:none}
     .mini-cal{display:block!important;flex:none;width:100%;max-width:none;margin:0}
     .head-actions{display:flex!important;margin-top:auto;justify-content:center}
+    .mobile-action-row{display:none!important}
     .mnav-toggle{display:none}
     .titles{padding-right:0}
     .main-content{padding:20px 26px 14px;min-width:0;flex:1;min-height:0}
@@ -639,6 +648,7 @@
         <div class="popover ls-pop" id="listPop" hidden></div>
         <button class="mnav-toggle" id="mnavToggle" title="Mostrar filtros y calendario" data-icon="menu"></button>
       </div>
+      <div class="mobile-action-row" id="mobileActionRow"></div>
       <div class="sb-controls">
         <div class="search-row">
           <span class="search-ico" data-icon="search"></span>
@@ -646,7 +656,7 @@
           <button id="searchClear" class="search-clear" title="Limpiar búsqueda" data-icon="close" hidden></button>
         </div>
 
-        <div class="filter-wrap">
+        <div class="filter-wrap" id="showWrap">
           <button class="filter-btn" id="showBtn"><span class="btn-ico" data-icon="eye"></span> Mostrar</button>
           <div class="popover filter-pop" id="showPop" hidden>
             <div class="filters">
@@ -657,14 +667,14 @@
           </div>
         </div>
 
-        <div class="filter-wrap">
+        <div class="filter-wrap" id="catWrap">
           <button class="filter-btn" id="catBtn"><span class="btn-ico" data-icon="tag"></span> Categoría</button>
           <div class="popover filter-pop" id="catPop" hidden>
             <div class="cat-bar" id="catBar"></div>
           </div>
         </div>
 
-        <div class="filter-wrap">
+        <div class="filter-wrap" id="sortWrap">
           <button class="filter-btn" id="sortBtn"><span class="btn-ico" data-icon="sort"></span> Ordenar</button>
           <div class="popover filter-pop" id="sortPop" hidden>
             <button class="sort-opt" data-sort="manual">Manual</button>
@@ -676,7 +686,7 @@
           </div>
         </div>
 
-        <div class="fp-section">
+        <div class="fp-section" id="fpSection">
           <div class="fp-label">Subir al tope (sobre el orden)</div>
           <div class="prio-toggles">
             <button class="toggle" id="tPrio" title="Las tareas importantes van arriba"><span class="btn-ico" data-icon="star"></span> Importantes</button>
@@ -980,6 +990,22 @@
     localStorage.setItem(MNAV_KEY, open?"1":"0");
     refreshMnavToggle();
   };
+
+  // En mobile: notif + tema + Mostrar/Categoría/Ordenar/Subir-al-tope + logout van todos juntos,
+  // en una sola fila fija arriba. En escritorio vuelven a su lugar de siempre.
+  (function(){
+    const mobRow=$("#mobileActionRow");
+    const items=["#notifBtn","#themeBtn","#showWrap","#catWrap","#sortWrap","#fpSection","#logoutBtn"]
+      .map(sel=>$(sel));
+    const homeParent=items.map(el=>el.parentElement);
+    const mq=window.matchMedia("(min-width:760px)");
+    function placeItems(){
+      if(mq.matches) items.forEach((el,i)=>homeParent[i].appendChild(el));
+      else items.forEach(el=>mobRow.appendChild(el));
+    }
+    placeItems();
+    mq.addEventListener("change", placeItems);
+  })();
 
   $("#themeBtn").onclick = () => {
     const t = document.documentElement.dataset.theme==="dark" ? "light":"dark";
