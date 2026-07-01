@@ -80,7 +80,7 @@
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .ls-caret{color:var(--muted);font-size:.9rem;flex:none;transition:transform .2s}
   .list-selector:hover .ls-caret{color:var(--accent)}
-  .titles .date{color:var(--muted);font-size:.82rem;margin-top:2px;text-transform:capitalize}
+  .titles .date{color:var(--muted);font-size:.82rem;margin-top:2px}
   .ls-pop{position:absolute;top:calc(100% + 6px);left:0;right:auto;min-width:210px;max-width:280px;z-index:40}
   .ls-row{display:flex;align-items:center;gap:2px;border-radius:9px}
   .ls-row.active{background:var(--accent-soft)}
@@ -126,7 +126,7 @@
     display:grid;place-items:center;transition:.15s;flex:none;
   }
   .mc-head button:hover{background:var(--accent-soft);color:var(--accent)}
-  #mcLabel{flex:1;text-align:center;font-size:.8rem;font-weight:700;text-transform:capitalize}
+  #mcLabel{flex:1;text-align:center;font-size:.8rem;font-weight:700}
   .mini-cal.collapsed .mc-grid{display:none}
   .mc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
   .mc-foot{display:flex;justify-content:flex-end;margin-top:4px}
@@ -155,6 +155,21 @@
   .mc-dot.due-orange{background:#f59e0b}
   .mc-dot.due-yellow{background:#84cc16}
   .mc-dot.due-green{background:#22c55e}
+
+  /* Selector de fecha propio (reemplaza el calendario nativo) */
+  .date-pop{position:fixed;padding:10px 12px 12px;min-width:230px}
+  .date-pop .mc-grid{margin-bottom:8px}
+  .date-pop .mc-cell{cursor:pointer}
+  .date-pop .mc-cell:not(.mc-empty):not(.mc-disabled):hover{background:var(--accent-soft)}
+  .date-pop .mc-cell.mc-selected .mc-num{
+    border:2px solid var(--accent);border-radius:50%;
+    width:18px;height:18px;display:grid;place-items:center;
+  }
+  .date-pop .mc-cell.mc-disabled{opacity:.3;cursor:default}
+  .dp-foot{display:flex;gap:6px}
+  .dp-foot button{flex:1;border:1px solid var(--row-border);background:transparent;color:var(--text);
+    cursor:pointer;font:inherit;font-size:.78rem;font-weight:700;padding:7px 8px;border-radius:8px;transition:.15s}
+  .dp-foot button:hover{background:var(--accent-soft);border-color:var(--accent)}
   .mc-grid .hovlist{left:50%;transform:translateX(-50%);top:calc(100% + 4px)}
   .mc-grid .hovlist.mc-right{left:auto;right:-8px;transform:none}
   .mc-grid .hovlist.mc-left{left:-8px;transform:none}
@@ -495,7 +510,6 @@
   .star:hover{background:var(--accent-soft)}
   .star.on{color:#f5b301}
   li.important{background:rgba(245,179,1,.07)}
-  .due-input,.subdue-input{width:0;height:0;opacity:0;border:0;padding:0;margin:0;overflow:hidden}
 
   /* Interruptores que sobreescriben el orden */
   .prio-toggles{display:flex;flex-direction:column;gap:3px}
@@ -688,6 +702,19 @@
     <button id="ctxAddSub">+ Agregar subtarea</button>
     <button id="ctxAddAtt">+ Agregar archivo</button>
     <button id="ctxAddNotes">+ Agregar notas</button>
+  </div>
+
+  <div class="popover date-pop" id="datePop" hidden>
+    <div class="mc-head">
+      <button type="button" id="dpPrev" title="Mes anterior" data-icon="chevLeft"></button>
+      <span id="dpLabel"></span>
+      <button type="button" id="dpNext" title="Mes siguiente" data-icon="chevRight"></button>
+    </div>
+    <div class="mc-grid" id="dpGrid"></div>
+    <div class="dp-foot">
+      <button type="button" id="dpToday">Hoy</button>
+      <button type="button" id="dpClear">Quitar fecha</button>
+    </div>
   </div>
 
   <div class="undo-toast" id="undoToast" hidden>
@@ -889,8 +916,10 @@
   const catById = id => cats.find(c=>c.id===id);
 
   // Fecha en español
-  $("#date").textContent = new Date().toLocaleDateString("es-ES",
-    {weekday:"long", day:"numeric", month:"long"});
+  (function(){
+    const s = new Date().toLocaleDateString("es-ES", {weekday:"long", day:"numeric", month:"long"});
+    $("#date").textContent = s.charAt(0).toUpperCase()+s.slice(1);
+  })();
 
   // Tema
   function applyTheme(t){
@@ -995,7 +1024,6 @@
             <div class="meta">
               <select class="catsel" title="Categoría">${catOptions(t.cat)}</select>
               <button class="due-btn ${di.cls}${t.due?" has-due":""}" title="${t.due?"Cambiar fecha (clic) · quitar (clic derecho)":"Poner fecha de vencimiento"}">${di.label}</button>
-              <input type="date" class="due-input" value="${t.due||""}">
               <span class="hovwrap">
                 <button class="subbtn ${subClass}" title="${subs.length?"Ver/ocultar subtareas":"Agregar subtareas"}">${subLabel}</button>
                 <div class="hovlist">${subs.length
@@ -1042,7 +1070,6 @@
                 <div class="subcheck"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div>
                 <span class="subtxt">${escapeHtml(s.text)}</span>
                 <button class="due-btn subdue-btn ${sdi.cls}${sEffDue?" has-due":""}${sInherited?" inherited":""}" title="${sDueTitle}">${sdi.label}</button>
-                <input type="date" class="subdue-input" data-sid="${s.id}" value="${s.due||""}"${t.due?` max="${t.due}"`:""}>
                 <button class="subnotesbtn ${s.notes?"has-notes":""}${sNotesOpen?" open":""}" title="Ver/agregar notas de la subtarea">${ICONS.notes(13)}</button>
                 <button class="subeditbtn" title="Editar subtarea">${ICONS.edit(13)}</button>
                 <button class="subdel" title="Eliminar subtarea">${ICONS.close(13)}</button>
@@ -1093,21 +1120,21 @@
         const sel=li.querySelector(".catsel");
         styleCatSel(sel, t.cat);
         sel.onchange = () => { t.cat = sel.value || null; save(); render(); };
-        const dueBtn=li.querySelector(".due-btn"), dueInput=li.querySelector(".due-input");
-        dueBtn.onclick = () => { try{ dueInput.showPicker(); }catch(e){ dueInput.focus(); dueInput.click(); } };
-        dueBtn.oncontextmenu = e => { e.preventDefault(); e.stopPropagation(); if(t.due){ t.due=null; save(); render(); } };
-        dueInput.onchange = () => {
-          const v = dueInput.value || null;
-          if(v){
-            const conflicto = (t.subtasks||[]).find(s=>s.due && s.due>v);
-            if(conflicto){
-              alert(`No se puede poner esa fecha: la subtarea "${conflicto.text}" vence despues, el ${formatDMY(conflicto.due)}. Cambiá o quitá esa fecha primero.`);
-              dueInput.value = t.due||"";
-              return;
+        const dueBtn=li.querySelector(".due-btn");
+        dueBtn.onclick = e => {
+          e.stopPropagation();
+          openDatePicker(dueBtn, { value:t.due, max:null, onPick: v => {
+            if(v){
+              const conflicto = (t.subtasks||[]).find(s=>s.due && s.due>v);
+              if(conflicto){
+                alert(`No se puede poner esa fecha: la subtarea "${conflicto.text}" vence despues, el ${formatDMY(conflicto.due)}. Cambiá o quitá esa fecha primero.`);
+                return;
+              }
             }
-          }
-          t.due = v; save(); render();
+            t.due = v; save(); render();
+          }});
         };
+        dueBtn.oncontextmenu = e => { e.preventDefault(); e.stopPropagation(); if(t.due){ t.due=null; save(); render(); } };
         const star=li.querySelector(".star");
         star.onclick = () => { t.important = !t.important; save(); render(); };
         li.oncontextmenu = e => openTaskMenu(e, t);
@@ -1152,22 +1179,22 @@
               if(subNotesExpanded.has(sid)) subNotesExpanded.delete(sid); else subNotesExpanded.add(sid);
               render();
             };
-            const sDueBtn=siEl.querySelector(".subdue-btn"), sDueInput=siEl.querySelector(".subdue-input");
-            sDueBtn.onclick = () => { try{ sDueInput.showPicker(); }catch(e){ sDueInput.focus(); sDueInput.click(); } };
+            const sDueBtn=siEl.querySelector(".subdue-btn");
+            sDueBtn.onclick = e => {
+              e.stopPropagation();
+              const s=(t.subtasks||[]).find(x=>x.id===sid); if(!s) return;
+              openDatePicker(sDueBtn, { value:s.due, max:t.due||null, onPick: v => {
+                if(v && t.due && v>t.due){
+                  alert(`La subtarea no puede vencer despues que la tarea (vence el ${formatDMY(t.due)}).`);
+                  return;
+                }
+                s.due=v; save(); render();
+              }});
+            };
             sDueBtn.oncontextmenu = e => {
               e.preventDefault(); e.stopPropagation();
               const s=(t.subtasks||[]).find(x=>x.id===sid); if(!s || !s.due) return;
               s.due=null; save(); render();
-            };
-            sDueInput.onchange = () => {
-              const s=(t.subtasks||[]).find(x=>x.id===sid); if(!s) return;
-              const v = sDueInput.value || null;
-              if(v && t.due && v>t.due){
-                alert(`La subtarea no puede vencer despues que la tarea (vence el ${formatDMY(t.due)}).`);
-                sDueInput.value = s.due||"";
-                return;
-              }
-              s.due=v; save(); render();
             };
           });
           li.querySelectorAll(".subnotes").forEach(taEl=>{
@@ -1281,6 +1308,56 @@
     localStorage.setItem("mis_tareas_calCollapsed", on?"1":"0");
     refreshMcToggle();
   };
+
+  // ----- Selector de fecha propio (reemplaza el <input type=date> nativo,
+  // que en Chrome/Edge deja que la rueda del mouse cambie la fecha sin querer) -----
+  const datePop=$("#datePop"), dpGrid=$("#dpGrid"), dpLabel=$("#dpLabel");
+  let dpMonth=new Date(), dpTarget=null;   // dpTarget = {value, max, onPick(v)}
+  function renderDatePicker(){
+    const y=dpMonth.getFullYear(), m=dpMonth.getMonth();
+    const label=dpMonth.toLocaleDateString("es-ES",{month:"long",year:"numeric"});
+    dpLabel.textContent = label.charAt(0).toUpperCase()+label.slice(1);
+    const p=n=>String(n).padStart(2,"0");
+    const firstDow=(new Date(y,m,1).getDay()+6)%7;
+    const daysInMonth=new Date(y,m+1,0).getDate();
+    const todayKey=todayStr();
+    const dowLabels=["L","M","X","J","V","S","D"];
+    let html=dowLabels.map(l=>`<div class="mc-dow">${l}</div>`).join("");
+    for(let i=0;i<firstDow;i++) html+=`<div class="mc-cell mc-empty"></div>`;
+    for(let day=1; day<=daysInMonth; day++){
+      const dateStr=`${y}-${p(m+1)}-${p(day)}`;
+      const isToday=dateStr===todayKey;
+      const isSelected=dpTarget && dpTarget.value===dateStr;
+      const isDisabled=dpTarget && dpTarget.max && dateStr>dpTarget.max;
+      html+=`<div class="mc-cell${isToday?" mc-today":""}${isSelected?" mc-selected":""}${isDisabled?" mc-disabled":""}" data-date="${dateStr}">
+        <span class="mc-num">${day}</span>
+      </div>`;
+    }
+    dpGrid.innerHTML=html;
+    dpGrid.querySelectorAll(".mc-cell:not(.mc-empty):not(.mc-disabled)").forEach(cell=>{
+      cell.onclick = () => { const v=cell.dataset.date, cb=dpTarget&&dpTarget.onPick; closeDatePicker(); if(cb) cb(v); };
+    });
+  }
+  function openDatePicker(anchorEl, opts){
+    dpTarget = opts;
+    dpMonth = opts.value ? new Date(opts.value+"T00:00:00") : new Date();
+    renderDatePicker();
+    datePop.hidden=false;
+    const r=anchorEl.getBoundingClientRect();
+    const mw=datePop.offsetWidth||240, mh=datePop.offsetHeight||270;
+    let x=r.left, y=r.bottom+6;
+    if(x+mw > window.innerWidth)  x = window.innerWidth  - mw - 8;
+    if(y+mh > window.innerHeight) y = r.top - mh - 6;
+    datePop.style.left = Math.max(8,x)+"px";
+    datePop.style.top  = Math.max(8,y)+"px";
+  }
+  function closeDatePicker(){ datePop.hidden=true; dpTarget=null; }
+  datePop.onclick = e => e.stopPropagation();
+  document.addEventListener("click", closeDatePicker);
+  $("#dpPrev").onclick = () => { dpMonth=new Date(dpMonth.getFullYear(), dpMonth.getMonth()-1, 1); renderDatePicker(); };
+  $("#dpNext").onclick = () => { dpMonth=new Date(dpMonth.getFullYear(), dpMonth.getMonth()+1, 1); renderDatePicker(); };
+  $("#dpToday").onclick = () => { const v=todayStr(), cb=dpTarget&&dpTarget.onPick; closeDatePicker(); if(cb) cb(v); };
+  $("#dpClear").onclick = () => { const cb=dpTarget&&dpTarget.onPick; closeDatePicker(); if(cb) cb(null); };
 
   function sortKeys(){
     const ks=[];
