@@ -40,6 +40,13 @@
     --row-border:rgba(255,255,255,.13);
   }
   *{box-sizing:border-box;margin:0;padding:0}
+  .icon{display:block;flex:none}
+  .btn-ico{display:inline-flex;vertical-align:-3px;margin-right:2px}
+  .theme-btn .icon,.list-selector .icon{width:19px;height:19px}
+  .filter-btn .btn-ico .icon,.toggle .btn-ico .icon{width:14px;height:14px}
+  .search-ico .icon,.search-clear .icon{width:15px;height:15px}
+  .mc-head button .icon{width:15px;height:15px}
+  .ls-caret .icon{width:13px;height:13px}
   html,body{height:100%}
   html,body{scrollbar-width:none;-ms-overflow-style:none}
   html::-webkit-scrollbar,body::-webkit-scrollbar{width:0;height:0;display:none}
@@ -351,7 +358,7 @@
   .attsec{border-top:1px dashed var(--row-border);padding-top:8px;margin-top:3px;
     display:flex;flex-direction:column;gap:6px}
   .atthead{display:flex;align-items:center;justify-content:space-between;gap:8px}
-  .attlbl{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
+  .attlbl{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
   .attadd{border:1px dashed var(--row-border);background:transparent;color:var(--accent);
     font-size:.78rem;font-weight:600;border-radius:8px;padding:4px 10px;cursor:pointer;transition:.2s}
   .attadd:hover{background:var(--accent-soft);border-color:var(--accent)}
@@ -386,7 +393,7 @@
   .subnotes-row{padding:2px 0 2px 27px}
 
   .empty{text-align:center;color:var(--muted);padding:38px 10px;font-size:.9rem}
-  .empty .ico{font-size:2.4rem;display:block;margin-bottom:8px;opacity:.7}
+  .empty .ico{display:flex;justify-content:center;margin-bottom:10px;opacity:.6}
 
   footer{display:flex;justify-content:space-between;align-items:center;
     margin-top:12px;padding-top:13px;border-top:1px solid var(--row-border);
@@ -520,6 +527,8 @@
     background:rgba(245,158,11,.14);border:1px solid rgba(245,158,11,.4);border-radius:12px;
     padding:10px 12px;font-size:.85rem;font-weight:600;color:var(--text)}
   .reminder-banner[hidden]{display:none}
+  .reminder-banner .rb-ico{flex:none;color:#b45309}
+  [data-theme="dark"] .reminder-banner .rb-ico{color:#fbbf24}
   .reminder-banner .rb-text{flex:1}
   .reminder-banner .hovwrap{cursor:default}
   .reminder-banner .rb-overdue{color:var(--danger);cursor:default}
@@ -541,7 +550,7 @@
   .login-card{max-width:380px;width:100%;text-align:center;
     background:var(--card);border:1px solid var(--card-border);border-radius:20px;
     padding:36px 28px;box-shadow:var(--shadow)}
-  .login-logo{font-size:2.6rem;margin-bottom:6px}
+  .login-logo{display:flex;justify-content:center;margin-bottom:14px;color:var(--accent)}
   .login-card h1{font-size:1.6rem;font-weight:800;margin-bottom:8px;letter-spacing:-.02em}
   .login-card p{color:var(--muted);font-size:.92rem;line-height:1.5;margin:0 0 20px}
   .login-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;
@@ -578,20 +587,20 @@
       <div class="titles">
         <button class="list-selector" id="listSelBtn" title="Cambiar de lista">
           <h1 id="listTitle">Mis Tareas</h1>
-          <span class="ls-caret">▾</span>
+          <span class="ls-caret" data-icon="chevDown"></span>
         </button>
         <div class="date" id="date"></div>
         <div class="popover ls-pop" id="listPop" hidden></div>
       </div>
       <div class="sb-controls">
         <div class="search-row">
-          <span class="search-ico">🔎</span>
+          <span class="search-ico" data-icon="search"></span>
           <input type="text" id="searchInput" class="search-input" placeholder="Buscar tareas…" autocomplete="off">
-          <button id="searchClear" class="search-clear" title="Limpiar búsqueda" hidden>✕</button>
+          <button id="searchClear" class="search-clear" title="Limpiar búsqueda" data-icon="close" hidden></button>
         </div>
 
         <div class="filter-wrap">
-          <button class="filter-btn" id="showBtn">👁 Mostrar</button>
+          <button class="filter-btn" id="showBtn"><span class="btn-ico" data-icon="eye"></span> Mostrar</button>
           <div class="popover filter-pop" id="showPop" hidden>
             <div class="filters">
               <button data-filter="all" class="active">Todas</button>
@@ -602,16 +611,16 @@
         </div>
 
         <div class="filter-wrap">
-          <button class="filter-btn" id="catBtn">🏷️ Categoría</button>
+          <button class="filter-btn" id="catBtn"><span class="btn-ico" data-icon="tag"></span> Categoría</button>
           <div class="popover filter-pop" id="catPop" hidden>
             <div class="cat-bar" id="catBar"></div>
           </div>
         </div>
 
         <div class="filter-wrap">
-          <button class="filter-btn" id="sortBtn">↕ Ordenar</button>
+          <button class="filter-btn" id="sortBtn"><span class="btn-ico" data-icon="sort"></span> Ordenar</button>
           <div class="popover filter-pop" id="sortPop" hidden>
-            <button class="sort-opt" data-sort="manual">↕ Manual</button>
+            <button class="sort-opt" data-sort="manual">Manual</button>
             <button class="sort-opt" data-sort="az">A → Z</button>
             <button class="sort-opt" data-sort="za">Z → A</button>
             <button class="sort-opt" data-sort="cat">Por categoría</button>
@@ -623,17 +632,17 @@
         <div class="fp-section">
           <div class="fp-label">Subir al tope (sobre el orden)</div>
           <div class="prio-toggles">
-            <button class="toggle" id="tPrio" title="Las tareas importantes van arriba">⭐ Importantes</button>
-            <button class="toggle" id="tDue" title="Las tareas por vencer van arriba">⏰ Vencimiento</button>
+            <button class="toggle" id="tPrio" title="Las tareas importantes van arriba"><span class="btn-ico" data-icon="star"></span> Importantes</button>
+            <button class="toggle" id="tDue" title="Las tareas por vencer van arriba"><span class="btn-ico" data-icon="clock"></span> Vencimiento</button>
           </div>
         </div>
       </div>
 
       <div class="mini-cal" id="miniCal">
         <div class="mc-head">
-          <button type="button" id="mcPrev" title="Mes anterior">‹</button>
+          <button type="button" id="mcPrev" title="Mes anterior" data-icon="chevLeft"></button>
           <span id="mcLabel"></span>
-          <button type="button" id="mcNext" title="Mes siguiente">›</button>
+          <button type="button" id="mcNext" title="Mes siguiente" data-icon="chevRight"></button>
         </div>
         <div class="mc-grid" id="mcGrid"></div>
         <div class="mc-foot">
@@ -641,9 +650,9 @@
         </div>
       </div>
       <div class="head-actions">
-        <button class="theme-btn" id="notifBtn" title="Avisos de vencimiento">🔔</button>
-        <button class="theme-btn" id="themeBtn" title="Cambiar tema">🌙</button>
-        <button class="theme-btn" id="logoutBtn" title="Cerrar sesión">🚪</button>
+        <button class="theme-btn" id="notifBtn" title="Avisos de vencimiento" data-icon="bell"></button>
+        <button class="theme-btn" id="themeBtn" title="Cambiar tema"></button>
+        <button class="theme-btn" id="logoutBtn" title="Cerrar sesión" data-icon="logout"></button>
       </div>
     </header>
 
@@ -688,7 +697,7 @@
 
   <div class="login-overlay" id="loginOverlay">
     <div class="login-card">
-      <div class="login-logo">📋</div>
+      <div class="login-logo" data-icon="clipboard" data-icon-size="40"></div>
       <h1>Mis Tareas</h1>
       <p>Iniciá sesión para acceder a tus tareas en todos tus dispositivos.</p>
       <button id="loginGithub" class="login-btn">
@@ -830,6 +839,46 @@
   const subNotesExpanded = new Set(); // ids de subtareas con sus notas desplegadas
 
   const PALETTE=["#6366f1","#ec4899","#f59e0b","#10b981","#3b82f6","#8b5cf6","#ef4444","#14b8a6","#f97316","#0ea5e9"];
+
+  // ----- Set de íconos (líneas finas, sin emoji) -----
+  function svgIcon(inner, size){
+    return `<svg class="icon" width="${size||16}" height="${size||16}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+  }
+  const ICONS = {
+    bell: s=>svgIcon('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>', s),
+    moon: s=>svgIcon('<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>', s),
+    sun: s=>svgIcon('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>', s),
+    logout: s=>svgIcon('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>', s),
+    search: s=>svgIcon('<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>', s),
+    eye: s=>svgIcon('<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>', s),
+    tag: s=>svgIcon('<path d="M20.59 13.41 13.42 20.6a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.4" fill="currentColor" stroke="none"/>', s),
+    sort: s=>svgIcon('<path d="M8 3v14M8 17l-4-4M8 17l4-4M16 21V7M16 7l4 4M16 7l-4 4"/>', s),
+    chevLeft: s=>svgIcon('<polyline points="15 18 9 12 15 6"/>', s),
+    chevRight: s=>svgIcon('<polyline points="9 18 15 12 9 6"/>', s),
+    chevDown: s=>svgIcon('<polyline points="6 9 12 15 18 9"/>', s),
+    star: s=>svgIcon('<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>', s),
+    starFill: s=>svgIcon('<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor"/>', s),
+    edit: s=>svgIcon('<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>', s),
+    close: s=>svgIcon('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>', s),
+    paperclip: s=>svgIcon('<path d="M21.44 11.05 12.25 20.24a5.5 5.5 0 0 1-7.78-7.78l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95L9.41 17.41a1.5 1.5 0 0 1-2.12-2.12l8.49-8.49"/>', s),
+    notes: s=>svgIcon('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/>', s),
+    calendar: s=>svgIcon('<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>', s),
+    check: s=>svgIcon('<polyline points="20 6 9 17 4 12"/>', s),
+    grip: s=>svgIcon('<circle cx="9" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="9" cy="18" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="18" r="1.3" fill="currentColor" stroke="none"/>', s),
+    clock: s=>svgIcon('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/>', s),
+    file: s=>svgIcon('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>', s),
+    image: s=>svgIcon('<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>', s),
+    checkCircle: s=>svgIcon('<circle cx="12" cy="12" r="9"/><polyline points="8 12 11 15 16 9"/>', s),
+    clipboard: s=>svgIcon('<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/>', s),
+    plus: s=>svgIcon('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>', s),
+  };
+  function applyStaticIcons(root){
+    (root||document).querySelectorAll("[data-icon]").forEach(el=>{
+      const fn = ICONS[el.dataset.icon]; if(!fn) return;
+      el.innerHTML = fn(el.dataset.iconSize);
+    });
+  }
+
   // ----- Adjuntos (Supabase Storage) -----
   const ATT_BUCKET="adjuntos";
   const ATT_ALLOWED_EXT=["pdf","doc","docx","ppt","pptx","png","jpg","jpeg","gif","webp"];
@@ -846,9 +895,10 @@
   // Tema
   function applyTheme(t){
     document.documentElement.dataset.theme = t;
-    $("#themeBtn").textContent = t==="dark" ? "☀️" : "🌙";
+    $("#themeBtn").innerHTML = ICONS[t==="dark" ? "sun" : "moon"](19);
   }
   applyTheme(localStorage.getItem(THEMEKEY) || "light");
+  applyStaticIcons();
   $("#themeBtn").onclick = () => {
     const t = document.documentElement.dataset.theme==="dark" ? "light":"dark";
     localStorage.setItem(THEMEKEY, t); applyTheme(t); syncServer();
@@ -906,13 +956,14 @@
 
     list.innerHTML = "";
     if(!visible.length){
-      let msg = "Agrega tu primera tarea arriba";
+      let msg = "Agrega tu primera tarea arriba", emptyIcon = ICONS.notes(30);
       if(tasks.length){
         msg = catFilter!=="all"
           ? "Sin tareas en esta categoría"
-          : (statusFilter==="done" ? "Aún no completas ninguna" : "¡Todo al día! 🎉");
+          : (statusFilter==="done" ? "Aún no completas ninguna" : "¡Todo al día!");
+        if(msg==="¡Todo al día!") emptyIcon = ICONS.checkCircle(30);
       }
-      list.innerHTML = `<div class="empty"><span class="ico">📝</span>${msg}</div>`;
+      list.innerHTML = `<div class="empty"><span class="ico">${emptyIcon}</span>${msg}</div>`;
     } else {
       for(const t of visible){
         const li=document.createElement("li");
@@ -935,7 +986,7 @@
         const notesLabel = `${chevHtml(toggleKey==="notes:"+t.id)} Notas`;
         const notesClass = (t.notes?"has-sub":"") + (notesOpen?" open":"");
         let html=`<div class="row">
-          <span class="grip" draggable="true" title="Arrastra para reordenar">⠿</span>
+          <span class="grip" draggable="true" title="Arrastra para reordenar">${ICONS.grip(15)}</span>
           <div class="check" role="checkbox" aria-checked="${t.done}" tabindex="0" title="${t.done?"Marcar como pendiente":"Marcar como completada"}">
             <svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>
           </div>
@@ -965,9 +1016,9 @@
               </span>
             </div>
           </div>
-          <button class="star ${t.important?"on":""}" title="Marcar como importante">${t.important?"★":"☆"}</button>
-          <button class="edit" title="Editar">✎</button>
-          <button class="del" title="Eliminar">✕</button>
+          <button class="star ${t.important?"on":""}" title="Marcar como importante">${t.important?ICONS.starFill(15):ICONS.star(15)}</button>
+          <button class="edit" title="Editar">${ICONS.edit(15)}</button>
+          <button class="del" title="Eliminar">${ICONS.close(15)}</button>
         </div>`;
         if(panelOpen){
           html+=`<div class="subpanel">`;
@@ -992,9 +1043,9 @@
                 <span class="subtxt">${escapeHtml(s.text)}</span>
                 <button class="due-btn subdue-btn ${sdi.cls}${sEffDue?" has-due":""}${sInherited?" inherited":""}" title="${sDueTitle}">${sdi.label}</button>
                 <input type="date" class="subdue-input" data-sid="${s.id}" value="${s.due||""}"${t.due?` max="${t.due}"`:""}>
-                <button class="subnotesbtn ${s.notes?"has-notes":""}${sNotesOpen?" open":""}" title="Ver/agregar notas de la subtarea">📝</button>
-                <button class="subeditbtn" title="Editar subtarea">✎</button>
-                <button class="subdel" title="Eliminar subtarea">✕</button>
+                <button class="subnotesbtn ${s.notes?"has-notes":""}${sNotesOpen?" open":""}" title="Ver/agregar notas de la subtarea">${ICONS.notes(13)}</button>
+                <button class="subeditbtn" title="Editar subtarea">${ICONS.edit(13)}</button>
+                <button class="subdel" title="Eliminar subtarea">${ICONS.close(13)}</button>
               </div>`;
               if(sNotesOpen){
                 html+=`<div class="subnotes-row"><textarea class="subnotes" data-sid="${s.id}" maxlength="2000" placeholder="Notas de esta subtarea…">${escapeHtml(s.notes||"")}</textarea></div>`;
@@ -1005,7 +1056,7 @@
           if(attOpen){
             html+=`<div class="attsec">
               <div class="atthead">
-                <span class="attlbl">📎 Archivos${atts.length?` (${atts.length})`:""}</span>
+                <span class="attlbl">${ICONS.paperclip(13)} Archivos${atts.length?` (${atts.length})`:""}</span>
                 <button class="attadd">+ Adjuntar</button>
               </div>`;
             for(const a of atts){
@@ -1015,7 +1066,7 @@
                   <span class="attname">${escapeHtml(a.name)}</span>
                   <span class="attsize">${formatSize(a.size)}</span>
                 </button>
-                <button class="attdel" title="Eliminar adjunto">✕</button>
+                <button class="attdel" title="Eliminar adjunto">${ICONS.close(13)}</button>
               </div>`;
             }
             html+=`</div>`;
@@ -1034,7 +1085,7 @@
           wireDrag(li, t.id);
         } else {
           grip.draggable=false; grip.classList.add("locked");
-          grip.title="Para arrastrar: elegí el orden «Manual» (botón ↕ Ordenar)";
+          grip.title="Para arrastrar: elegí el orden «Manual» (botón Ordenar)";
         }
         li.querySelector(".check").onclick = () => toggle(t.id);
         li.querySelector(".check").onkeydown = e => {if(e.key===" "||e.key==="Enter"){e.preventDefault();toggle(t.id);}};
@@ -1161,7 +1212,7 @@
     return Math.round((due-today)/86400000);
   }
   function dueInfo(t){
-    if(!t.due) return {cls:"", label:"📅"};
+    if(!t.due) return {cls:"", label:ICONS.calendar(13)};
     const today=todayStr();
     const label = t.due===today ? "Hoy" : formatDMY(t.due);
     if(t.done) return {cls:"due-done", label};
@@ -1263,7 +1314,6 @@
   }
   function renderCats(){
     catBar.innerHTML = "";
-    catBar.insertAdjacentHTML("beforeend", `<span class="clbl" title="Categorías">🏷️</span>`);
     catBar.appendChild(makeChip("Todas", null, catFilter==="all", () => { catFilter="all"; render(); }));
     for(const c of cats){
       if(editingCat===c.id){
@@ -1302,7 +1352,7 @@
     let html = "";
     if(cat) html += `<span class="dot" style="background:${active?'#fff':cat.color}"></span>`;
     html += `<span class="chip-name">${escapeHtml(name)}</span>`;
-    if(cat && active) html += `<span class="chip-edit" title="Editar categoría">✎</span><span class="x" title="Eliminar categoría">✕</span>`;
+    if(cat && active) html += `<span class="chip-edit" title="Editar categoría">${ICONS.edit(13)}</span><span class="x" title="Eliminar categoría">${ICONS.close(13)}</span>`;
     b.innerHTML = html;
     b.onclick = e => {
       if(e.target.classList.contains("x")){ e.stopPropagation(); deleteCat(cat); return; }
@@ -1514,11 +1564,8 @@
   function extOf(name){ const m=/\.([a-z0-9]+)$/i.exec(name||""); return m?m[1].toLowerCase():""; }
   function iconForName(name){
     const e=extOf(name);
-    if(e==="pdf") return "📕";
-    if(e==="doc"||e==="docx") return "📘";
-    if(e==="ppt"||e==="pptx") return "📙";
-    if(["png","jpg","jpeg","gif","webp"].includes(e)) return "🖼️";
-    return "📎";
+    if(["png","jpg","jpeg","gif","webp"].includes(e)) return ICONS.image(15);
+    return ICONS.file(15);
   }
   function formatSize(bytes){
     if(!bytes) return "";
@@ -1713,16 +1760,16 @@
       row.className="ls-row"+(l.id===activeList?" active":"");
       const nameBtn=document.createElement("button");
       nameBtn.className="ls-name";
-      nameBtn.innerHTML=`<span class="ls-check">${l.id===activeList?"✓":""}</span><span>${escapeHtml(l.name)}</span>`;
+      nameBtn.innerHTML=`<span class="ls-check">${l.id===activeList?ICONS.check(13):""}</span><span>${escapeHtml(l.name)}</span>`;
       nameBtn.onclick=()=>{ switchList(l.id); listPop.hidden=true; };
       row.appendChild(nameBtn);
       const ed=document.createElement("button");
-      ed.className="ls-edit"; ed.title="Renombrar"; ed.textContent="✎";
+      ed.className="ls-edit"; ed.title="Renombrar"; ed.innerHTML=ICONS.edit(13);
       ed.onclick=e=>{ e.stopPropagation(); renamingList=l.id; renderListMenu(); };
       row.appendChild(ed);
       if(lists.length>1){
         const del=document.createElement("button");
-        del.className="ls-del"; del.title="Eliminar lista"; del.textContent="✕";
+        del.className="ls-del"; del.title="Eliminar lista"; del.innerHTML=ICONS.close(13);
         del.onclick=e=>{ e.stopPropagation(); deleteList(l.id); };
         row.appendChild(del);
       }
@@ -1833,8 +1880,8 @@
     const parts=[];
     if(overdue.length) parts.push(`<span class="hovwrap"><span class="rb-overdue">${overdue.length} vencida${overdue.length>1?'s':''}</span><div class="hovlist">${rowsHtml(overdue)}</div></span>`);
     if(dueToday.length) parts.push(`<span class="hovwrap">${dueToday.length} para hoy<div class="hovlist">${rowsHtml(dueToday)}</div></span>`);
-    b.innerHTML = `<span>🔔</span><span class="rb-text">Tenés ${parts.join(" y ")}.</span>`
-      + `<button class="rb-close" title="Ocultar">✕</button>`;
+    b.innerHTML = `<span class="rb-ico">${ICONS.bell(16)}</span><span class="rb-text">Tenés ${parts.join(" y ")}.</span>`
+      + `<button class="rb-close" title="Ocultar">${ICONS.close(14)}</button>`;
     b.hidden=false;
     b.querySelectorAll(".rb-hoverow").forEach(row=>{
       row.onclick = () => {
