@@ -521,11 +521,14 @@
     padding:10px 12px;font-size:.85rem;font-weight:600;color:var(--text)}
   .reminder-banner[hidden]{display:none}
   .reminder-banner .rb-text{flex:1}
-  .reminder-banner .rb-overdue{color:var(--danger)}
+  .reminder-banner .hovwrap{cursor:default}
+  .reminder-banner .rb-overdue{color:var(--danger);cursor:default}
   .reminder-banner button{border:none;cursor:pointer;font:inherit;font-weight:700;border-radius:8px;padding:5px 10px;font-size:.8rem}
-  .reminder-banner .rb-view{background:var(--accent);color:#fff}
-  .reminder-banner .rb-close{background:transparent;color:var(--muted);padding:5px 7px}
+  .reminder-banner .rb-close{background:transparent;color:var(--muted);padding:5px 7px;margin-left:auto}
   .reminder-banner .rb-close:hover{color:var(--danger)}
+  .reminder-banner .hovlist{top:calc(100% + 6px);left:0}
+  .rb-hoverow{cursor:pointer}
+  .rb-hoverow:hover{background:var(--accent-soft)}
 
   /* Pantalla de login */
   .login-overlay{position:fixed;inset:0;z-index:200;
@@ -642,6 +645,8 @@
     </header>
 
     <div class="main-content">
+    <div class="reminder-banner" id="reminderBanner" hidden></div>
+
     <input type="file" id="attInput" multiple hidden
       accept=".pdf,.doc,.docx,.ppt,.pptx,image/png,image/jpeg,image/gif,image/webp">
 
@@ -657,8 +662,6 @@
       <input type="text" id="input" placeholder="¿Qué necesitas hacer?" autocomplete="off" maxlength="200">
       <button class="add" type="submit" title="Agregar">+</button>
     </form>
-
-    <div class="reminder-banner" id="reminderBanner" hidden></div>
 
     <ul id="list"></ul>
 
@@ -1792,25 +1795,45 @@
   searchClear.onclick = () => { searchInput.value=""; searchQuery=""; searchClear.hidden=true; render(); searchInput.focus(); };
   searchInput.onkeydown = (e) => { if(e.key==="Escape"){ searchClear.onclick(); } };
 
-  // ----- Recordatorios de vencimiento -----
-  function dueCounts(){
-    const today=todayStr(); let overdue=0, todayN=0;
-    for(const t of tasks){
-      if(t.done || !t.due) continue;
-      if(t.due < today) overdue++; else if(t.due === today) todayN++;
+  // ----- Recordatorios de vencimiento (de TODAS las listas) -----
+  function dueItemsAllLists(){
+    pushGlobalsToActive();
+    const today=todayStr();
+    const overdue=[], dueToday=[];
+    for(const l of lists){
+      for(const t of (l.tasks||[])){
+        if(t.done || !t.due) continue;
+        const item={text:t.text, listId:l.id, listName:l.name, foreign:l.id!==activeList};
+        if(t.due<today) overdue.push(item);
+        else if(t.due===today) dueToday.push(item);
+      }
     }
-    return {overdue, today:todayN};
+    return {overdue, dueToday};
   }
   function renderReminderBanner(){
-    const b=$("#reminderBanner"); const {overdue, today}=dueCounts();
-    if(reminderDismissed || (overdue===0 && today===0)){ b.hidden=true; return; }
+    const b=$("#reminderBanner");
+    const {overdue, dueToday}=dueItemsAllLists();
+    if(reminderDismissed || (overdue.length===0 && dueToday.length===0)){ b.hidden=true; return; }
+    const rowsHtml = items => items.map(it=>
+      `<div class="hovrow rb-hoverow" data-list="${it.listId}">${escapeHtml(it.text)}${it.foreign?` <span class="mc-listtag">${escapeHtml(it.listName)}</span>`:""}</div>`
+    ).join("");
     const parts=[];
-    if(overdue) parts.push(`<span class="rb-overdue">${overdue} vencida${overdue>1?'s':''}</span>`);
-    if(today) parts.push(`${today} para hoy`);
+    if(overdue.length) parts.push(`<span class="hovwrap"><span class="rb-overdue">${overdue.length} vencida${overdue.length>1?'s':''}</span><div class="hovlist">${rowsHtml(overdue)}</div></span>`);
+    if(dueToday.length) parts.push(`<span class="hovwrap">${dueToday.length} para hoy<div class="hovlist">${rowsHtml(dueToday)}</div></span>`);
     b.innerHTML = `<span>🔔</span><span class="rb-text">Tenés ${parts.join(" y ")}.</span>`
-      + `<button class="rb-view">Ver</button><button class="rb-close" title="Ocultar">✕</button>`;
+      + `<button class="rb-close" title="Ocultar">✕</button>`;
     b.hidden=false;
-    b.querySelector(".rb-view").onclick = () => { dueFirst=true; statusFilter="all"; persistLocal(); refreshToggles(); render(); };
+    b.querySelectorAll(".rb-hoverow").forEach(row=>{
+      row.onclick = () => {
+        const id=row.dataset.list;
+        if(id!==activeList){
+          pushGlobalsToActive(); activeList=id; pullGlobalsFromActive(); resetViewForList(); updateListTitle();
+        }
+        dueFirst=true; statusFilter="all";
+        refreshSortBtns(); refreshToggles();
+        persistLocal(); syncServer(); render();
+      };
+    });
     b.querySelector(".rb-close").onclick = () => { reminderDismissed=true; b.hidden=true; };
   }
   // Resumen diario por email: el botón solo guarda la preferencia (emailNotif),
