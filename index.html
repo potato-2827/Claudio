@@ -418,6 +418,7 @@
     border-radius:8px;padding:8px 10px;outline:none;transition:.2s;
   }
   .notesarea:focus,.subnotes:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .notesarea.saved-flash,.subnotes.saved-flash{border-color:#22c55e!important;box-shadow:0 0 0 3px rgba(34,197,94,.25)!important;transition:.1s}
   .subnotesbtn{border:none;background:transparent;cursor:pointer;color:var(--muted);
     width:24px;height:24px;border-radius:7px;flex:none;font-size:.8rem;
     display:grid;place-items:center;transition:.2s}
@@ -997,6 +998,11 @@
   // save() y saveCats() persisten todo el estado (local + respaldo)
   function save(){ persistLocal(); syncServer(); }
   const saveCats = save;
+  // destello breve para confirmar visualmente que Enter guardó la nota
+  function flashSaved(el){
+    el.classList.add("saved-flash");
+    setTimeout(()=>el.classList.remove("saved-flash"), 400);
+  }
 
   function render(){
     const toggleKey = lastToggleKey; lastToggleKey = null;
@@ -1237,6 +1243,7 @@
             if(e.key==="Enter" && !e.shiftKey){
               e.preventDefault();
               t.notes = notesarea.value.trim() || null; save();
+              flashSaved(notesarea);
             }
           };
         }
@@ -1288,6 +1295,7 @@
               if(e.key==="Enter" && !e.shiftKey){
                 e.preventDefault();
                 s.notes = taEl.value.trim() || null; save();
+                flashSaved(taEl);
               }
             };
           });
