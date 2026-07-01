@@ -560,6 +560,10 @@
     font-size:.85rem;padding:4px;border-radius:7px;flex:none}
   .search-clear:hover{color:var(--danger);background:rgba(239,68,68,.12)}
 
+  .sticky-top{position:sticky;top:0;z-index:15;background:var(--card);
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    margin:0 -20px;padding:10px 20px 4px;border-bottom:1px solid var(--row-border)}
+
   /* Banner de recordatorios */
   .reminder-banner{display:flex;align-items:center;gap:10px;margin-bottom:10px;
     background:rgba(245,158,11,.14);border:1px solid rgba(245,158,11,.4);border-radius:12px;
@@ -617,6 +621,8 @@
     .mnav-toggle{display:none}
     .titles{padding-right:0}
     .main-content{padding:20px 26px 14px;min-width:0;flex:1;min-height:0}
+    .sticky-top{margin:0 -26px;padding:0 26px 4px;position:static;background:transparent;
+      backdrop-filter:none;-webkit-backdrop-filter:none;border-bottom:none}
     ul{flex:1;overflow-y:auto}
   }
 </style>
@@ -698,18 +704,20 @@
     </header>
 
     <div class="main-content">
-    <div class="reminder-banner" id="reminderBanner" hidden></div>
+    <div class="sticky-top">
+      <div class="reminder-banner" id="reminderBanner" hidden></div>
+
+      <div class="progress-wrap">
+        <div class="progress-meta">
+          <span id="progressLabel">Sin tareas todavía</span>
+          <b id="progressPct">0%</b>
+        </div>
+        <div class="bar"><span id="bar"></span></div>
+      </div>
+    </div>
 
     <input type="file" id="attInput" multiple hidden
       accept=".pdf,.doc,.docx,.ppt,.pptx,image/png,image/jpeg,image/gif,image/webp">
-
-    <div class="progress-wrap">
-      <div class="progress-meta">
-        <span id="progressLabel">Sin tareas todavía</span>
-        <b id="progressPct">0%</b>
-      </div>
-      <div class="bar"><span id="bar"></span></div>
-    </div>
 
     <form id="form">
       <input type="text" id="input" placeholder="¿Qué necesitas hacer?" autocomplete="off" maxlength="200">
