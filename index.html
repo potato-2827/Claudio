@@ -1130,10 +1130,13 @@
           e.stopPropagation();
           openDatePicker(dueBtn, { value:t.due, max:null, onPick: v => {
             if(v){
-              const conflicto = (t.subtasks||[]).find(s=>s.due && s.due>v);
-              if(conflicto){
-                alert(`No se puede poner esa fecha: la subtarea "${conflicto.text}" vence despues, el ${formatDMY(conflicto.due)}. Cambiá o quitá esa fecha primero.`);
-                return;
+              const conflictos = (t.subtasks||[]).filter(s=>s.due && s.due>v);
+              if(conflictos.length){
+                const lista = conflictos.map(s=>`"${s.text}" (${formatDMY(s.due)})`).join(", ");
+                const plural = conflictos.length>1;
+                const ok = confirm(`${plural?"Estas subtareas vencen":"Esta subtarea vence"} después de la nueva fecha: ${lista}. ¿Cambiar ${plural?"sus vencimientos":"su vencimiento"} al ${formatDMY(v)} también?`);
+                if(!ok) return;
+                conflictos.forEach(s=>{ s.due=v; });
               }
             }
             t.due = v; save(); render();
