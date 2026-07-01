@@ -483,19 +483,20 @@
 
   /* Fecha de vencimiento por tarea */
   .due-btn{
-    flex:none;border:none;cursor:pointer;border-radius:99px;white-space:nowrap;
-    font:inherit;font-size:.7rem;font-weight:700;padding:3px 8px;
-    background:var(--row-border);color:var(--muted);display:none;transition:background .2s;
+    flex:none;cursor:pointer;border-radius:99px;white-space:nowrap;
+    font:inherit;font-size:.7rem;font-weight:700;padding:2.5px 7px;
+    background:transparent;border:1.5px solid var(--row-border);color:var(--muted);
+    display:none;transition:.2s;
   }
   li:hover .due-btn,.due-btn.has-due{display:inline-block}
   .due-btn:hover{filter:brightness(.97)}
-  .due-btn.due-overdue{background:var(--danger);color:#fff;font-weight:800}
-  .due-btn.due-red{background:rgba(239,68,68,.16);color:var(--danger)}
-  .due-btn.due-orange{background:rgba(245,158,11,.18);color:#b45309}
+  .due-btn.due-overdue{border-color:var(--danger);color:var(--danger);font-weight:800}
+  .due-btn.due-red{border-color:var(--danger);color:var(--danger)}
+  .due-btn.due-orange{border-color:#f59e0b;color:#b45309}
   [data-theme="dark"] .due-btn.due-orange{color:#fbbf24}
-  .due-btn.due-yellow{background:rgba(132,179,3,.18);color:#4d7c0f}
+  .due-btn.due-yellow{border-color:#84cc16;color:#4d7c0f}
   [data-theme="dark"] .due-btn.due-yellow{color:#bef264}
-  .due-btn.due-green{background:rgba(34,197,94,.16);color:#15803d}
+  .due-btn.due-green{border-color:#22c55e;color:#15803d}
   [data-theme="dark"] .due-btn.due-green{color:#5fe08a}
   .due-btn.due-done{opacity:.55;text-decoration:line-through}
   .subdue-btn{font-size:.66rem;padding:2px 7px;display:inline-block}
@@ -1023,7 +1024,7 @@
             <span class="txt">${escapeHtml(t.text)}</span>
             <div class="meta">
               <select class="catsel" title="Categoría">${catOptions(t.cat)}</select>
-              <button class="due-btn ${di.cls}${t.due?" has-due":""}" title="${t.due?"Cambiar fecha (clic) · quitar (clic derecho)":"Poner fecha de vencimiento"}">${di.label}</button>
+              <button class="due-btn ${di.cls}${t.due?" has-due":""}" title="${t.due?(di.overdue?`Venció el ${di.dateLabel} · `:"")+"Cambiar fecha (clic) · quitar (clic derecho)":"Poner fecha de vencimiento"}">${di.label}</button>
               <span class="hovwrap">
                 <button class="subbtn ${subClass}" title="${subs.length?"Ver/ocultar subtareas":"Agregar subtareas"}">${subLabel}</button>
                 <div class="hovlist">${subs.length
@@ -1065,7 +1066,7 @@
               const sdi = dueInfo({due:sEffDue, done:s.done});
               const sDueTitle = sInherited
                 ? "Hereda la fecha de la tarea (clic para poner una propia)"
-                : (s.due ? "Cambiar fecha (clic) · quitar (clic derecho)" : "Poner fecha de vencimiento");
+                : (s.due ? (sdi.overdue?`Venció el ${sdi.dateLabel} · `:"")+"Cambiar fecha (clic) · quitar (clic derecho)" : "Poner fecha de vencimiento");
               html+=`<div class="subitem ${s.done?"done":""}" data-sid="${s.id}">
                 <div class="subcheck"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div>
                 <span class="subtxt">${escapeHtml(s.text)}</span>
@@ -1239,13 +1240,15 @@
     return Math.round((due-today)/86400000);
   }
   function dueInfo(t){
-    if(!t.due) return {cls:"", label:ICONS.calendar(13)};
+    if(!t.due) return {cls:"", label:ICONS.calendar(13), dateLabel:null, overdue:false};
     const today=todayStr();
-    const label = t.due===today ? "Hoy" : formatDMY(t.due);
-    if(t.done) return {cls:"due-done", label};
+    const dateLabel = t.due===today ? "Hoy" : formatDMY(t.due);
+    if(t.done) return {cls:"due-done", label:dateLabel, dateLabel, overdue:false};
     const days=daysUntil(t.due);
-    const cls = days<0 ? "due-overdue" : days<3 ? "due-red" : days<7 ? "due-orange" : days<14 ? "due-yellow" : "due-green";
-    return {cls, label};
+    const overdue = days<0;
+    const cls = overdue ? "due-overdue" : days<3 ? "due-red" : days<7 ? "due-orange" : days<14 ? "due-yellow" : "due-green";
+    const label = overdue ? "Vencida" : dateLabel;
+    return {cls, label, dateLabel, overdue};
   }
 
   // ----- Mini calendario -----
