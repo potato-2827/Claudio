@@ -1198,11 +1198,17 @@
         li.oncontextmenu = e => openTaskMenu(e, t);
         li.querySelector(".row").onclick = e => {
           if(e.target.closest("button, select, input, .grip, .check, a")) return;
-          const allOpen = isOpen && attOpen && notesOpen;
+          const hasSubs = subs.length>0, hasAtts = atts.length>0, hasNotes = !!t.notes;
+          if(!hasSubs && !hasAtts && !hasNotes) return;
+          const allOpen = (!hasSubs || isOpen) && (!hasAtts || attOpen) && (!hasNotes || notesOpen);
           if(allOpen){
-            expanded.delete(t.id); attExpanded.delete(t.id); notesExpanded.delete(t.id);
+            if(hasSubs) expanded.delete(t.id);
+            if(hasAtts) attExpanded.delete(t.id);
+            if(hasNotes) notesExpanded.delete(t.id);
           } else {
-            expanded.add(t.id); attExpanded.add(t.id); notesExpanded.add(t.id);
+            if(hasSubs) expanded.add(t.id);
+            if(hasAtts) attExpanded.add(t.id);
+            if(hasNotes) notesExpanded.add(t.id);
           }
           render();
         };
