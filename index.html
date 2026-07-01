@@ -277,7 +277,8 @@
   li.done .check{background:var(--accent)}
   li.done .check svg{stroke:#fff;opacity:1}
   .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-  .txt{min-width:0;max-width:100%;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:.25s;cursor:text}
+  .title-row{display:flex;align-items:center;gap:4px;min-width:0}
+  .txt{flex:1;min-width:0;max-width:100%;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:.25s;cursor:text}
   .meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:20px}
   li.done .txt{color:var(--done);text-decoration:line-through}
   .edit-input{
@@ -352,7 +353,11 @@
     stroke-dasharray:20;stroke-dashoffset:20;transition:stroke-dashoffset .25s}
   .subitem.done .subcheck{background:var(--accent)}
   .subitem.done .subcheck svg{stroke-dashoffset:0}
-  .subtxt{flex:1;font-size:.86rem;cursor:pointer;word-break:break-word}
+  .subtxt-wrap{display:flex;align-items:center;gap:4px;flex:1;min-width:0}
+  .subtxt{flex:1;min-width:0;font-size:.86rem;cursor:pointer;word-break:break-word}
+  .note-flag{color:var(--muted);flex:none;cursor:default}
+  .note-flag:hover{color:var(--accent)}
+  .note-flag .hovlist{max-width:min(90vw,320px);white-space:normal;word-break:break-word;padding:8px 10px;font-size:.8rem}
   .subitem.done .subtxt{color:var(--done);text-decoration:line-through}
   .subedit{flex:1;font:inherit;font-size:.86rem;color:var(--text);
     background:var(--input-bg);border:1px solid var(--accent);border-radius:8px;
@@ -1025,7 +1030,9 @@
             <svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>
           </div>
           <div class="body">
-            <span class="txt">${escapeHtml(t.text)}</span>
+            <div class="title-row">
+              <span class="txt">${escapeHtml(t.text)}</span>${t.notes ? `<span class="hovwrap note-flag" title="Tiene notas">${ICONS.notes(12)}<div class="hovlist">${escapeHtml(t.notes)}</div></span>` : ""}
+            </div>
             <div class="meta">
               <select class="catsel" title="Categoría">${catOptions(t.cat)}</select>
               <button class="due-btn ${di.cls}${t.due?" has-due":""}" title="${t.due?"Cambiar fecha (clic) · quitar (clic derecho)":"Poner fecha de vencimiento"}">${dueLabelHtml(di)}</button>
@@ -1073,7 +1080,7 @@
                 : (s.due ? "Cambiar fecha (clic) · quitar (clic derecho)" : "Poner fecha de vencimiento");
               html+=`<div class="subitem ${s.done?"done":""}" data-sid="${s.id}">
                 <div class="subcheck"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div>
-                <span class="subtxt">${escapeHtml(s.text)}</span>
+                <span class="subtxt-wrap"><span class="subtxt">${escapeHtml(s.text)}</span>${s.notes ? `<span class="hovwrap note-flag" title="Tiene notas">${ICONS.notes(11)}<div class="hovlist">${escapeHtml(s.notes)}</div></span>` : ""}</span>
                 <button class="due-btn subdue-btn ${sdi.cls}${sEffDue?" has-due":""}${sInherited?" inherited":""}" title="${sDueTitle}">${dueLabelHtml(sdi)}</button>
                 <button class="subnotesbtn ${s.notes?"has-notes":""}${sNotesOpen?" open":""}" title="Ver/agregar notas de la subtarea">${ICONS.notes(13)}</button>
                 <button class="subeditbtn" title="Editar subtarea">${ICONS.edit(13)}</button>
@@ -1183,6 +1190,12 @@
           const notesarea=li.querySelector(".notesarea");
           notesarea.oninput = () => { t.notes = notesarea.value; };
           notesarea.onblur = () => { t.notes = notesarea.value.trim() || null; save(); };
+          notesarea.onkeydown = e => {
+            if(e.key==="Enter" && !e.shiftKey){
+              e.preventDefault();
+              t.notes = notesarea.value.trim() || null; save();
+            }
+          };
         }
 
         if(isOpen){
@@ -1221,6 +1234,12 @@
             const s=(t.subtasks||[]).find(x=>x.id===sid); if(!s) return;
             taEl.oninput = () => { s.notes = taEl.value; };
             taEl.onblur = () => { s.notes = taEl.value.trim() || null; save(); };
+            taEl.onkeydown = e => {
+              if(e.key==="Enter" && !e.shiftKey){
+                e.preventDefault();
+                s.notes = taEl.value.trim() || null; save();
+              }
+            };
           });
           const subadd=li.querySelector(".subadd");
           subadd.onkeydown = e => { if(e.key==="Enter"){ e.preventDefault(); addSub(t, subadd.value); } };
