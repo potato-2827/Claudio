@@ -529,6 +529,9 @@
   .reminder-banner .hovlist{top:calc(100% + 6px);left:0}
   .rb-hoverow{cursor:pointer}
   .rb-hoverow:hover{background:var(--accent-soft)}
+  .hov-listhdr{font-size:.64rem;font-weight:800;text-transform:uppercase;letter-spacing:.03em;
+    color:var(--muted);padding:5px 5px 2px}
+  .hov-listhdr:first-child{padding-top:1px}
 
   /* Pantalla de login */
   .login-overlay{position:fixed;inset:0;z-index:200;
@@ -1803,7 +1806,7 @@
     for(const l of lists){
       for(const t of (l.tasks||[])){
         if(t.done || !t.due) continue;
-        const item={text:t.text, listId:l.id, listName:l.name, foreign:l.id!==activeList};
+        const item={text:t.text, listId:l.id, listName:l.name};
         if(t.due<today) overdue.push(item);
         else if(t.due===today) dueToday.push(item);
       }
@@ -1814,9 +1817,19 @@
     const b=$("#reminderBanner");
     const {overdue, dueToday}=dueItemsAllLists();
     if(reminderDismissed || (overdue.length===0 && dueToday.length===0)){ b.hidden=true; return; }
-    const rowsHtml = items => items.map(it=>
-      `<div class="hovrow rb-hoverow" data-list="${it.listId}">${escapeHtml(it.text)}${it.foreign?` <span class="mc-listtag">${escapeHtml(it.listName)}</span>`:""}</div>`
-    ).join("");
+    const rowsHtml = items => {
+      const groups=new Map();   // listId -> {name, items:[]}
+      for(const it of items){
+        if(!groups.has(it.listId)) groups.set(it.listId, {name:it.listName, items:[]});
+        groups.get(it.listId).items.push(it);
+      }
+      let html="";
+      for(const [listId, g] of groups){
+        html += `<div class="hov-listhdr">${escapeHtml(g.name)}</div>`;
+        html += g.items.map(it=>`<div class="hovrow rb-hoverow" data-list="${listId}">${escapeHtml(it.text)}</div>`).join("");
+      }
+      return html;
+    };
     const parts=[];
     if(overdue.length) parts.push(`<span class="hovwrap"><span class="rb-overdue">${overdue.length} vencida${overdue.length>1?'s':''}</span><div class="hovlist">${rowsHtml(overdue)}</div></span>`);
     if(dueToday.length) parts.push(`<span class="hovwrap">${dueToday.length} para hoy<div class="hovlist">${rowsHtml(dueToday)}</div></span>`);
