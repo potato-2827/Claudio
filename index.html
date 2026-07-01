@@ -1188,10 +1188,11 @@
             sDueBtn.onclick = e => {
               e.stopPropagation();
               const s=(t.subtasks||[]).find(x=>x.id===sid); if(!s) return;
-              openDatePicker(sDueBtn, { value:s.due, max:t.due||null, onPick: v => {
+              openDatePicker(sDueBtn, { value:s.due, max:null, onPick: v => {
                 if(v && t.due && v>t.due){
-                  alert(`La subtarea no puede vencer despues que la tarea (vence el ${formatDMY(t.due)}).`);
-                  return;
+                  const ok=confirm(`Esta subtarea vencería el ${formatDMY(v)}, después que la tarea (vence el ${formatDMY(t.due)}). ¿Extender la fecha de la tarea al ${formatDMY(v)} también?`);
+                  if(!ok) return;
+                  t.due=v;
                 }
                 s.due=v; save(); render();
               }});
