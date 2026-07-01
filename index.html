@@ -1146,6 +1146,16 @@
         const star=li.querySelector(".star");
         star.onclick = () => { t.important = !t.important; save(); render(); };
         li.oncontextmenu = e => openTaskMenu(e, t);
+        li.querySelector(".row").onclick = e => {
+          if(e.target.closest("button, select, input, .grip, .check, a")) return;
+          const allOpen = isOpen && attOpen && notesOpen;
+          if(allOpen){
+            expanded.delete(t.id); attExpanded.delete(t.id); notesExpanded.delete(t.id);
+          } else {
+            expanded.add(t.id); attExpanded.add(t.id); notesExpanded.add(t.id);
+          }
+          render();
+        };
         const willOpen = !isOpen;
         li.querySelector(".subbtn").onclick = () => {
           if(willOpen) expanded.add(t.id); else expanded.delete(t.id);
