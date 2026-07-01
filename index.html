@@ -446,7 +446,7 @@
   .chip:not(.active):hover{background:var(--accent-soft);color:var(--accent)}
   .chip .dot{width:8px;height:8px;border-radius:50%;flex:none}
   .chip .chip-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .chip.active{color:#fff}
+  .chip.active{background:var(--accent-soft);color:var(--text);font-weight:700}
   .chip .x{margin-left:1px;font-size:.95rem;line-height:1;opacity:.8}
   .chip .x:hover{opacity:1;transform:scale(1.2)}
   .chip .chip-edit{margin-left:1px;font-size:.85rem;line-height:1;opacity:.8}
@@ -472,10 +472,10 @@
   }
   /* selector de categoria por tarea */
   .catsel{
-    flex:none;max-width:108px;border:none;cursor:pointer;
+    flex:none;max-width:108px;border:1.5px solid var(--row-border);cursor:pointer;
     font:inherit;font-size:.7rem;font-weight:700;letter-spacing:.01em;
-    border-radius:99px;padding:3px 9px;appearance:none;-webkit-appearance:none;
-    color:var(--muted);background:var(--row-border);display:none;
+    border-radius:99px;padding:1.5px 8px;appearance:none;-webkit-appearance:none;
+    color:var(--muted);background:transparent;display:none;
     text-overflow:ellipsis;
   }
   li:hover .catsel,.catsel.has-cat{display:inline-block}
@@ -1397,11 +1397,11 @@
     const c = catById(catId);
     if(c){
       sel.classList.add("has-cat");
-      sel.style.background = c.color+"26";
+      sel.style.borderColor = c.color;
       sel.style.color = c.color;
     } else {
       sel.classList.remove("has-cat");
-      sel.style.background = ""; sel.style.color = "";
+      sel.style.borderColor = ""; sel.style.color = "";
     }
   }
   function renderCats(){
@@ -1439,10 +1439,8 @@
   function makeChip(name, cat, active, onClick){
     const b=document.createElement("button");
     b.className="chip"+(active?" active":"");
-    const color = cat ? cat.color : "var(--accent)";
-    if(active) b.style.background = color;
     let html = "";
-    if(cat) html += `<span class="dot" style="background:${active?'#fff':cat.color}"></span>`;
+    if(cat) html += `<span class="dot" style="background:${cat.color}"></span>`;
     html += `<span class="chip-name">${escapeHtml(name)}</span>`;
     if(cat && active) html += `<span class="chip-edit" title="Editar categoría">${ICONS.edit(13)}</span><span class="x" title="Eliminar categoría">${ICONS.close(13)}</span>`;
     b.innerHTML = html;
