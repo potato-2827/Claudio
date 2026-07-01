@@ -1224,7 +1224,14 @@
 
         if(notesOpen){
           const notesarea=li.querySelector(".notesarea");
-          notesarea.oninput = () => { t.notes = notesarea.value; };
+          notesarea.oninput = () => {
+            if(/\n$/.test(notesarea.value)){
+              notesarea.value = notesarea.value.replace(/\n+$/,"");
+              t.notes = notesarea.value.trim() || null; save();
+              return;
+            }
+            t.notes = notesarea.value;
+          };
           notesarea.onblur = () => { t.notes = notesarea.value.trim() || null; save(); };
           notesarea.onkeydown = e => {
             if(e.key==="Enter" && !e.shiftKey){
@@ -1268,7 +1275,14 @@
           li.querySelectorAll(".subnotes").forEach(taEl=>{
             const sid=taEl.dataset.sid;
             const s=(t.subtasks||[]).find(x=>x.id===sid); if(!s) return;
-            taEl.oninput = () => { s.notes = taEl.value; };
+            taEl.oninput = () => {
+              if(/\n$/.test(taEl.value)){
+                taEl.value = taEl.value.replace(/\n+$/,"");
+                s.notes = taEl.value.trim() || null; save();
+                return;
+              }
+              s.notes = taEl.value;
+            };
             taEl.onblur = () => { s.notes = taEl.value.trim() || null; save(); };
             taEl.onkeydown = e => {
               if(e.key==="Enter" && !e.shiftKey){
