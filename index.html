@@ -419,6 +419,7 @@
   }
   .notesarea:focus,.subnotes:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
   .notesarea.saved-flash,.subnotes.saved-flash{border-color:#22c55e!important;box-shadow:0 0 0 3px rgba(34,197,94,.25)!important;transition:.1s}
+  .notesarea.note-paused,.subnotes.note-paused{opacity:.55;cursor:pointer}
   .subnotesbtn{border:none;background:transparent;cursor:pointer;color:var(--muted);
     width:24px;height:24px;border-radius:7px;flex:none;font-size:.8rem;
     display:grid;place-items:center;transition:.2s}
@@ -1239,11 +1240,14 @@
             t.notes = notesarea.value;
           };
           notesarea.onblur = () => { t.notes = notesarea.value.trim() || null; save(); };
+          notesarea.onfocus = () => { notesarea.classList.remove("note-paused"); };
           notesarea.onkeydown = e => {
             if(e.key==="Enter" && !e.shiftKey){
               e.preventDefault();
               t.notes = notesarea.value.trim() || null; save();
               flashSaved(notesarea);
+              notesarea.classList.add("note-paused");
+              notesarea.blur();
             }
           };
         }
@@ -1291,11 +1295,14 @@
               s.notes = taEl.value;
             };
             taEl.onblur = () => { s.notes = taEl.value.trim() || null; save(); };
+            taEl.onfocus = () => { taEl.classList.remove("note-paused"); };
             taEl.onkeydown = e => {
               if(e.key==="Enter" && !e.shiftKey){
                 e.preventDefault();
                 s.notes = taEl.value.trim() || null; save();
                 flashSaved(taEl);
+                taEl.classList.add("note-paused");
+                taEl.blur();
               }
             };
           });
