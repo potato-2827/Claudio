@@ -73,7 +73,7 @@
   .sidebar{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px;
     padding:20px 20px 14px;flex:none}
   .main-content{display:flex;flex-direction:column;flex:1;min-height:0;padding:0 20px 14px}
-  .titles{order:1;position:relative}
+  .titles{order:1;position:relative;padding-right:40px}
   .list-selector{display:inline-flex;align-items:center;gap:6px;cursor:pointer;
     border:none;background:transparent;padding:0;border-radius:8px;color:var(--text);max-width:100%}
   .list-selector h1{font-size:1.5rem;font-weight:700;letter-spacing:-.02em;
@@ -81,6 +81,16 @@
   .ls-caret{color:var(--muted);font-size:.9rem;flex:none;transition:transform .2s}
   .list-selector:hover .ls-caret{color:var(--accent)}
   .titles .date{color:var(--muted);font-size:.82rem;margin-top:2px}
+  .mnav-toggle{
+    position:absolute;top:0;right:0;border:none;cursor:pointer;width:34px;height:34px;
+    border-radius:10px;background:var(--accent-soft);color:var(--accent);
+    display:grid;place-items:center;flex:none;transition:.15s;
+  }
+  .mnav-toggle:hover{filter:brightness(1.05)}
+  .sb-controls,.mini-cal,.head-actions{display:none}
+  .sidebar.mnav-open .sb-controls{display:block}
+  .sidebar.mnav-open .mini-cal{display:block}
+  .sidebar.mnav-open .head-actions{display:flex}
   .ls-pop{position:absolute;top:calc(100% + 6px);left:0;right:auto;min-width:210px;max-width:280px;z-index:40}
   .ls-row{display:flex;align-items:center;gap:2px;border-radius:9px}
   .ls-row.active{background:var(--accent-soft)}
@@ -600,9 +610,11 @@
       border-right:1px solid var(--row-border);
       padding:20px 16px;
     }
-    .sb-controls{flex:none}
-    .mini-cal{flex:none;width:100%;max-width:none;margin:0}
-    .head-actions{margin-top:auto;justify-content:center}
+    .sb-controls{display:block!important;flex:none}
+    .mini-cal{display:block!important;flex:none;width:100%;max-width:none;margin:0}
+    .head-actions{display:flex!important;margin-top:auto;justify-content:center}
+    .mnav-toggle{display:none}
+    .titles{padding-right:0}
     .main-content{padding:20px 26px 14px;min-width:0;flex:1;min-height:0}
     ul{flex:1;overflow-y:auto}
   }
@@ -618,6 +630,7 @@
         </button>
         <div class="date" id="date"></div>
         <div class="popover ls-pop" id="listPop" hidden></div>
+        <button class="mnav-toggle" id="mnavToggle" title="Mostrar filtros y calendario" data-icon="menu"></button>
       </div>
       <div class="sb-controls">
         <div class="search-row">
@@ -911,6 +924,7 @@
     checkCircle: s=>svgIcon('<circle cx="12" cy="12" r="9"/><polyline points="8 12 11 15 16 9"/>', s),
     clipboard: s=>svgIcon('<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/>', s),
     plus: s=>svgIcon('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>', s),
+    menu: s=>svgIcon('<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>', s),
   };
   function applyStaticIcons(root){
     (root||document).querySelectorAll("[data-icon]").forEach(el=>{
@@ -941,6 +955,23 @@
   }
   applyTheme(localStorage.getItem(THEMEKEY) || "light");
   applyStaticIcons();
+
+  // ----- Menú móvil: colapsa buscador/filtros/categorías/ordenar/calendario -----
+  const MNAV_KEY="mis_tareas_mnavOpen";
+  const sidebarEl=$(".sidebar"), mnavToggle=$("#mnavToggle");
+  if(localStorage.getItem(MNAV_KEY)==="1") sidebarEl.classList.add("mnav-open");
+  function refreshMnavToggle(){
+    const open=sidebarEl.classList.contains("mnav-open");
+    mnavToggle.innerHTML = ICONS[open?"close":"menu"](19);
+    mnavToggle.title = open ? "Ocultar filtros y calendario" : "Mostrar filtros y calendario";
+  }
+  refreshMnavToggle();
+  mnavToggle.onclick = () => {
+    const open=sidebarEl.classList.toggle("mnav-open");
+    localStorage.setItem(MNAV_KEY, open?"1":"0");
+    refreshMnavToggle();
+  };
+
   $("#themeBtn").onclick = () => {
     const t = document.documentElement.dataset.theme==="dark" ? "light":"dark";
     localStorage.setItem(THEMEKEY, t); applyTheme(t); syncServer();
