@@ -66,9 +66,37 @@
   .sidebar{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px;
     padding:20px 20px 14px;flex:none}
   .main-content{display:flex;flex-direction:column;flex:1;min-height:0;padding:0 20px 14px}
-  .titles{order:1}
-  .titles h1{font-size:1.5rem;font-weight:700;letter-spacing:-.02em}
+  .titles{order:1;position:relative}
+  .list-selector{display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+    border:none;background:transparent;padding:0;border-radius:8px;color:var(--text);max-width:100%}
+  .list-selector h1{font-size:1.5rem;font-weight:700;letter-spacing:-.02em;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ls-caret{color:var(--muted);font-size:.9rem;flex:none;transition:transform .2s}
+  .list-selector:hover .ls-caret{color:var(--accent)}
   .titles .date{color:var(--muted);font-size:.82rem;margin-top:2px;text-transform:capitalize}
+  .ls-pop{position:absolute;top:calc(100% + 6px);left:0;right:auto;min-width:210px;max-width:280px;z-index:40}
+  .ls-row{display:flex;align-items:center;gap:2px;border-radius:9px}
+  .ls-row.active{background:var(--accent-soft)}
+  .ls-name{flex:1;display:flex;align-items:center;gap:7px;min-width:0;
+    border:none;background:transparent;cursor:pointer;font:inherit;font-size:.88rem;font-weight:600;
+    color:var(--text);text-align:left;padding:8px 10px;border-radius:9px}
+  .ls-name:hover{background:var(--accent-soft)}
+  .ls-name span:last-child{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ls-check{width:14px;flex:none;color:var(--accent);font-weight:800}
+  .ls-edit,.ls-del{border:none;background:transparent;cursor:pointer;color:var(--muted);
+    width:26px;height:30px;border-radius:8px;flex:none;font-size:.85rem;
+    display:grid;place-items:center;transition:.15s}
+  .ls-edit:hover{background:var(--accent-soft);color:var(--accent)}
+  .ls-del:hover{background:rgba(239,68,68,.12);color:var(--danger)}
+  .ls-rename{width:100%;border:1px solid var(--accent);background:var(--input-bg);color:var(--text);
+    border-radius:9px;padding:7px 10px;font:inherit;font-size:.88rem;font-weight:600;
+    outline:none;box-shadow:0 0 0 3px var(--accent-soft);margin:1px 0}
+  .ls-add{border:none;background:transparent;color:var(--accent);cursor:pointer;
+    font:inherit;font-size:.82rem;font-weight:700;text-align:left;padding:8px 10px;border-radius:9px;
+    margin-top:2px;border-top:1px solid var(--row-border)}
+  .ls-add:hover{background:var(--accent-soft)}
+  .mc-listtag{font-size:.66rem;color:var(--muted);background:var(--accent-soft);
+    padding:1px 5px;border-radius:6px;white-space:nowrap}
   .theme-btn{
     border:none;cursor:pointer;width:38px;height:38px;border-radius:12px;
     background:var(--accent-soft);color:var(--accent);font-size:1.05rem;
@@ -542,8 +570,12 @@
   <main class="app">
     <header class="sidebar">
       <div class="titles">
-        <h1>Mis Tareas</h1>
+        <button class="list-selector" id="listSelBtn" title="Cambiar de lista">
+          <h1 id="listTitle">Mis Tareas</h1>
+          <span class="ls-caret">▾</span>
+        </button>
         <div class="date" id="date"></div>
+        <div class="popover ls-pop" id="listPop" hidden></div>
       </div>
       <div class="sb-controls">
         <div class="search-row">
@@ -701,7 +733,7 @@
 
     window.ikLogout = async () => {
       await sb.auth.signOut();
-      ["mis_tareas_v1","mis_tareas_cats","mis_tareas_sort","mis_tareas_prioFirst","mis_tareas_dueFirst","mis_tareas_web","mis_tareas_theme"].forEach(k=>localStorage.removeItem(k));
+      ["mis_tareas_v1","mis_tareas_cats","mis_tareas_sort","mis_tareas_prioFirst","mis_tareas_dueFirst","mis_tareas_web","mis_tareas_theme","mis_tareas_lists"].forEach(k=>localStorage.removeItem(k));
       location.reload();
     };
 
@@ -730,13 +762,55 @@
     };
   }
   const KEY="mis_tareas_v1", THEMEKEY="mis_tareas_theme", CATKEY="mis_tareas_cats", SORTKEY="mis_tareas_sort";
-  let tasks = JSON.parse(localStorage.getItem(KEY) || "[]");
-  let cats  = JSON.parse(localStorage.getItem(CATKEY) || "[]");
+  const LKEY="mis_tareas_lists";  // cache local del modelo v3: { lists, activeList }
+
+  // ----- Modelo de listas -----
+  // Cada lista tiene sus PROPIAS tareas, categorías y prefs de orden.
+  // Las "globales de trabajo" (tasks/cats/sortMode/prioFirst/dueFirst) son
+  // siempre las de la lista activa; el resto del código las usa como antes.
+  let lists = [];
+  let activeList = null;
+  let tasks = [], cats = [], sortMode = "manual", prioFirst = false, dueFirst = false;
+
+  function newListId(){ return "l"+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+  function activeListObj(){ return lists.find(l=>l.id===activeList) || lists[0] || null; }
+  function pushGlobalsToActive(){   // globales -> lista activa (antes de guardar/leer todas)
+    const l=activeListObj(); if(!l) return;
+    l.tasks=tasks; l.cats=cats; l.sort=sortMode; l.prioFirst=prioFirst; l.dueFirst=dueFirst;
+  }
+  function pullGlobalsFromActive(){ // lista activa -> globales (al cambiar de lista)
+    const l=activeListObj(); if(!l) return;
+    activeList=l.id;
+    tasks=Array.isArray(l.tasks)?l.tasks:[]; cats=Array.isArray(l.cats)?l.cats:[];
+    sortMode=l.sort||"manual"; prioFirst=!!l.prioFirst; dueFirst=!!l.dueFirst;
+  }
+  function migrateFlat(d){  // formato viejo (una sola lista suelta) -> array de 1 lista
+    return [{ id:newListId(), name:"Mis Tareas",
+              tasks:Array.isArray(d.tasks)?d.tasks:[], cats:Array.isArray(d.cats)?d.cats:[],
+              sort:d.sort||"manual", prioFirst:!!d.prioFirst, dueFirst:!!d.dueFirst }];
+  }
+
+  // Carga inicial desde localStorage (cache; en boot() manda lo de Supabase).
+  (function initLocal(){
+    try{
+      const raw=localStorage.getItem(LKEY);
+      if(raw){ const s=JSON.parse(raw); if(s && Array.isArray(s.lists) && s.lists.length){ lists=s.lists; activeList=s.activeList; } }
+    }catch(e){}
+    if(!lists.length){
+      const d={};
+      try{ d.tasks=JSON.parse(localStorage.getItem(KEY)||"[]"); }catch(e){ d.tasks=[]; }
+      try{ d.cats=JSON.parse(localStorage.getItem(CATKEY)||"[]"); }catch(e){ d.cats=[]; }
+      d.sort=localStorage.getItem(SORTKEY)||"manual";
+      d.prioFirst=localStorage.getItem("mis_tareas_prioFirst")==="1";
+      d.dueFirst=localStorage.getItem("mis_tareas_dueFirst")==="1";
+      lists=migrateFlat(d); activeList=lists[0].id;
+    }
+    pullGlobalsFromActive();
+  })();
+
   let statusFilter = "all";   // all | active | done
   let catFilter = "all";      // all | <id de categoria>
-  let sortMode = localStorage.getItem(SORTKEY) || "manual";  // manual | az | za | cat | pending
-  let prioFirst = localStorage.getItem("mis_tareas_prioFirst")==="1";  // importantes arriba (sobreescribe)
-  let dueFirst  = localStorage.getItem("mis_tareas_dueFirst")==="1";   // por vencer arriba (sobreescribe)
+  // sortMode / prioFirst / dueFirst se declaran arriba (son de la lista activa)
   let emailNotif = localStorage.getItem("mis_tareas_emailNotif")==="1"; // recibir resumen diario por email (lo lee la función del servidor)
   let addingCat = false;
   let editingCat = null;  // id de la categoria en edicion (nombre/color), o null
@@ -775,15 +849,13 @@
   };
 
   function persistLocal(){
-    localStorage.setItem(KEY, JSON.stringify(tasks));
-    localStorage.setItem(CATKEY, JSON.stringify(cats));
-    localStorage.setItem(SORTKEY, sortMode);
-    localStorage.setItem("mis_tareas_prioFirst", prioFirst?"1":"0");
-    localStorage.setItem("mis_tareas_dueFirst",  dueFirst?"1":"0");
+    pushGlobalsToActive();
+    try{ localStorage.setItem(LKEY, JSON.stringify({lists, activeList})); }catch(e){}
   }
   function stateSnapshot(){
-    return { v:2, savedAt:new Date().toISOString(),
-             tasks, cats, sort:sortMode, prioFirst, dueFirst, emailNotif,
+    pushGlobalsToActive();
+    return { v:3, savedAt:new Date().toISOString(),
+             lists, activeList, emailNotif,
              theme:document.documentElement.dataset.theme };
   }
   let syncTimer=null;
@@ -1099,11 +1171,15 @@
     const label=calMonth.toLocaleDateString("es-ES",{month:"long",year:"numeric"});
     $("#mcLabel").textContent = label.charAt(0).toUpperCase()+label.slice(1);
 
-    const dueMap=new Map();   // "YYYY-MM-DD" -> [tarea, ...]
-    for(const t of tasks){
-      if(t.done || !t.due) continue;
-      if(!dueMap.has(t.due)) dueMap.set(t.due, []);
-      dueMap.get(t.due).push(t);
+    // El calendario junta las tareas por vencer de TODAS las listas.
+    pushGlobalsToActive();
+    const dueMap=new Map();   // "YYYY-MM-DD" -> [{text, listName, foreign}, ...]
+    for(const l of lists){
+      for(const t of (l.tasks||[])){
+        if(t.done || !t.due) continue;
+        if(!dueMap.has(t.due)) dueMap.set(t.due, []);
+        dueMap.get(t.due).push({text:t.text, listName:l.name, foreign:l.id!==activeList});
+      }
     }
 
     const p=n=>String(n).padStart(2,"0");
@@ -1126,8 +1202,8 @@
         html+=`<div class="mc-cell hovwrap${isToday?" mc-today":""}">
           <span class="mc-num">${day}</span>
           <span class="mc-dot ${dotCls}"></span>
-          <div class="hovlist ${align}">${items.map(t=>
-            `<div class="hovrow">${escapeHtml(t.text)}</div>`).join("")}</div>
+          <div class="hovlist ${align}">${items.map(it=>
+            `<div class="hovrow">${escapeHtml(it.text)}${it.foreign?` <span class="mc-listtag">${escapeHtml(it.listName)}</span>`:""}</div>`).join("")}</div>
         </div>`;
       } else {
         html+=`<div class="mc-cell${isToday?" mc-today":""}"><span class="mc-num">${day}</span></div>`;
@@ -1517,8 +1593,7 @@
   document.querySelectorAll(".sort-opt").forEach(b=>{
     b.onclick = () => {
       sortMode = b.dataset.sort;
-      localStorage.setItem(SORTKEY, sortMode);
-      syncServer();
+      save();
       refreshSortBtns();
       render();
     };
@@ -1568,6 +1643,98 @@
     catBtn.classList.toggle("active", catFilter!=="all");
     sortBtn.classList.toggle("active", sortMode!=="manual");
   }
+
+  // ----- Selector de listas (el título es el botón) -----
+  const listSelBtn=$("#listSelBtn"), listPop=$("#listPop");
+  let renamingList=null;
+  function updateListTitle(){
+    const l=activeListObj();
+    $("#listTitle").textContent = l ? l.name : "Mis Tareas";
+  }
+  function resetViewForList(){
+    catFilter="all"; searchQuery="";
+    const si=$("#searchInput"); if(si){ si.value=""; $("#searchClear").hidden=true; }
+    if(typeof pendingUndo!=="undefined" && pendingUndo){ clearTimeout(pendingUndo.timer); pendingUndo=null; $("#undoToast").hidden=true; }
+  }
+  function switchList(id){
+    if(id===activeList){ listPop.hidden=true; return; }
+    pushGlobalsToActive();
+    activeList=id;
+    pullGlobalsFromActive();
+    resetViewForList();
+    refreshSortBtns(); refreshToggles();
+    persistLocal(); syncServer();
+    updateListTitle(); render();
+  }
+  function createList(){
+    pushGlobalsToActive();
+    const l={id:newListId(), name:"Nueva lista", tasks:[], cats:[], sort:"manual", prioFirst:false, dueFirst:false};
+    lists.push(l); activeList=l.id;
+    pullGlobalsFromActive();
+    resetViewForList();
+    refreshSortBtns(); refreshToggles();
+    persistLocal(); syncServer();
+    updateListTitle(); render();
+    renamingList=l.id; renderListMenu();   // abrir el nombre para editar
+  }
+  function deleteList(id){
+    if(lists.length<=1){ alert("No se puede eliminar la única lista."); return; }
+    const l=lists.find(x=>x.id===id); if(!l) return;
+    const n=(l.tasks||[]).length;
+    if(!confirm(`¿Eliminar la lista "${l.name}"${n?` y sus ${n} tarea(s)`:""}? No se puede deshacer.`)) return;
+    const wasActive = activeList===id;
+    lists=lists.filter(x=>x.id!==id);
+    if(wasActive){ activeList=lists[0].id; pullGlobalsFromActive(); resetViewForList(); refreshSortBtns(); refreshToggles(); updateListTitle(); }
+    persistLocal(); syncServer(); render(); renderListMenu();
+  }
+  function renderListMenu(){
+    listPop.innerHTML="";
+    for(const l of lists){
+      if(renamingList===l.id){
+        const inp=document.createElement("input");
+        inp.className="ls-rename"; inp.value=l.name; inp.maxLength=30;
+        listPop.appendChild(inp);
+        setTimeout(()=>{ inp.focus(); inp.select(); });
+        let done=false;
+        const fin=keep=>{ if(done) return; done=true; renamingList=null;
+          if(keep){ const v=inp.value.trim(); if(v) l.name=v; }
+          persistLocal(); syncServer(); updateListTitle(); renderListMenu(); };
+        inp.onkeydown=e=>{ if(e.key==="Enter"){e.preventDefault();fin(true);} else if(e.key==="Escape"){e.preventDefault();fin(false);} };
+        inp.onblur=()=>fin(true);
+        continue;
+      }
+      const row=document.createElement("div");
+      row.className="ls-row"+(l.id===activeList?" active":"");
+      const nameBtn=document.createElement("button");
+      nameBtn.className="ls-name";
+      nameBtn.innerHTML=`<span class="ls-check">${l.id===activeList?"✓":""}</span><span>${escapeHtml(l.name)}</span>`;
+      nameBtn.onclick=()=>{ switchList(l.id); listPop.hidden=true; };
+      row.appendChild(nameBtn);
+      const ed=document.createElement("button");
+      ed.className="ls-edit"; ed.title="Renombrar"; ed.textContent="✎";
+      ed.onclick=e=>{ e.stopPropagation(); renamingList=l.id; renderListMenu(); };
+      row.appendChild(ed);
+      if(lists.length>1){
+        const del=document.createElement("button");
+        del.className="ls-del"; del.title="Eliminar lista"; del.textContent="✕";
+        del.onclick=e=>{ e.stopPropagation(); deleteList(l.id); };
+        row.appendChild(del);
+      }
+      listPop.appendChild(row);
+    }
+    const add=document.createElement("button");
+    add.className="ls-add"; add.textContent="+ Nueva lista";
+    add.onclick=()=> createList();
+    listPop.appendChild(add);
+  }
+  listSelBtn.onclick=e=>{
+    e.stopPropagation();
+    const show=listPop.hidden;
+    if(show){ renamingList=null; renderListMenu(); }
+    listPop.hidden=!show;
+  };
+  listPop.onclick=e=>e.stopPropagation();
+  document.addEventListener("click", ()=>{ listPop.hidden=true; });
 
   // ----- Menú contextual (clic derecho) de cada tarea -----
   const ctxMenu=$("#taskCtxMenu"), ctxAddSub=$("#ctxAddSub"), ctxAddAtt=$("#ctxAddAtt"), ctxAddNotes=$("#ctxAddNotes");
@@ -1682,19 +1849,27 @@
   async function boot(){
     try{
       const d = await window.api.load();
-      if(d && Array.isArray(d.tasks) && (d.tasks.length || (Array.isArray(d.cats)&&d.cats.length))){
-        tasks = d.tasks; cats = d.cats||[]; sortMode = d.sort||sortMode;
-        if(typeof d.prioFirst==="boolean") prioFirst=d.prioFirst;
-        if(typeof d.dueFirst==="boolean")  dueFirst=d.dueFirst;
+      let loaded=null, loadedActive=null;
+      if(d && Array.isArray(d.lists) && d.lists.length){          // formato v3
+        loaded=d.lists; loadedActive=d.activeList;
+      } else if(d && Array.isArray(d.tasks)){                     // formato viejo v2 -> migrar
+        loaded=migrateFlat(d); loadedActive=loaded[0].id;
+      }
+      const hasContent = loaded && loaded.some(l => (l.tasks&&l.tasks.length) || (l.cats&&l.cats.length));
+      if(hasContent){
+        lists=loaded; activeList=loadedActive || lists[0].id;
+        if(!activeListObj()) activeList=lists[0].id;
+        pullGlobalsFromActive();
         if(typeof d.emailNotif==="boolean"){ emailNotif=d.emailNotif; localStorage.setItem("mis_tareas_emailNotif", emailNotif?"1":"0"); }
         if(d.theme){ localStorage.setItem(THEMEKEY, d.theme); applyTheme(d.theme); }
         refreshSortBtns(); refreshToggles(); refreshNotifBtn();
         persistLocal();
       } else {
-        // archivo vacío: migramos lo que haya en localStorage
+        // Supabase vacío: subimos lo que haya en localStorage
         syncServer();
       }
     }catch(e){}
+    updateListTitle();
     render();
     input.focus();
   }

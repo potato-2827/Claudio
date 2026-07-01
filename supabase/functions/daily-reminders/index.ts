@@ -91,9 +91,12 @@ Deno.serve(async (_req) => {
 
     let sent = 0, skipped = 0;
     for (const row of rows || []) {
-      const d = (row.data || {}) as { emailNotif?: boolean; tasks?: Task[] };
+      const d = (row.data || {}) as { emailNotif?: boolean; tasks?: Task[]; lists?: { tasks?: Task[] }[] };
       if (d.emailNotif !== true) { skipped++; continue; }
-      const tasks = Array.isArray(d.tasks) ? d.tasks : [];
+      // v3: junta las tareas de todas las listas; v2 (viejo): d.tasks suelto.
+      const tasks: Task[] = Array.isArray(d.lists)
+        ? d.lists.flatMap((l) => Array.isArray(l.tasks) ? l.tasks : [])
+        : (Array.isArray(d.tasks) ? d.tasks : []);
       const overdue = tasks.filter((t) => t && !t.done && t.due && t.due < today);
       const dueToday = tasks.filter((t) => t && !t.done && t.due && t.due === today);
       if (overdue.length === 0 && dueToday.length === 0) { skipped++; continue; }
