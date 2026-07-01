@@ -1806,7 +1806,7 @@
     for(const l of lists){
       for(const t of (l.tasks||[])){
         if(t.done || !t.due) continue;
-        const item={text:t.text, listId:l.id, listName:l.name};
+        const item={text:t.text, due:t.due, listId:l.id, listName:l.name};
         if(t.due<today) overdue.push(item);
         else if(t.due===today) dueToday.push(item);
       }
@@ -1826,7 +1826,7 @@
       let html="";
       for(const [listId, g] of groups){
         html += `<div class="hov-listhdr">${escapeHtml(g.name)}</div>`;
-        html += g.items.map(it=>`<div class="hovrow rb-hoverow" data-list="${listId}">${escapeHtml(it.text)}</div>`).join("");
+        html += g.items.map(it=>`<div class="hovrow rb-hoverow" data-list="${listId}">${escapeHtml(it.text)} <span class="mc-listtag">${formatDMY(it.due)}</span></div>`).join("");
       }
       return html;
     };
